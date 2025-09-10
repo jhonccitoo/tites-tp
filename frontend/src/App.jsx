@@ -1,0 +1,67 @@
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
+
+import Noteslist from "./components/NotesList.jsx";
+import CreateNote from "./components/CreateNote";
+import CreateUser from "./components/CreateUser";
+import TesistaView from "./screens/tesista-view.jsx";
+import Login from "./screens/login.jsx";
+import Navigation from "./components/Navigation";
+import MetodologoView from "./screens/metodologo-view.jsx";
+import Revisor1View from "./screens/revisor1-view.jsx";
+import Revisor2View from "./screens/revisor2-view.jsx";
+import Asesor from "./screens/asesor-view.jsx";
+import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
+import DriveViewer from "./screens/DriveViewer";
+
+// Componente para rutas protegidas
+const ProtectedRoute = () => {
+  const token = localStorage.getItem("googleToken");
+  return token ? (
+    <>
+      <Navigation />
+      <Outlet />
+    </>
+  ) : (
+    <Navigate to="/" replace />
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Ruta pública */}
+        <Route path="/" element={<Login />} />
+
+        {/* Rutas protegidas con Navigation */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/notas" element={<Noteslist />} />
+          <Route path="/edit/:id" element={<CreateNote />} />
+          <Route path="/create" element={<CreateNote />} />
+          <Route path="/user" element={<CreateUser />} />
+          <Route path="/TesistaView" element={<TesistaView />} />
+          <Route path="/MetodologoView" element={<MetodologoView />} />
+          <Route path="/asesor" element={<Asesor />} />
+          <Route path="/coordinadorGeneral" element={<CoordinadorGeneralView />} />
+          <Route path="/revisor1" element={<Revisor1View />} />
+          <Route path="/revisor2" element={<Revisor2View />} />
+          <Route path="/drive" element={<DriveViewer />} />
+        </Route>
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
