@@ -21,8 +21,6 @@ import Revisor2View from "./screens/revisor2-view.jsx";
 import Asesor from "./screens/asesor-view.jsx";
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
 import DriveViewer from "./screens/DriveViewer";
-import Prueba1 from "./screens/prueba1.jsx"; //Testeo
-import Prueba2 from "./screens/prueba2.jsx"; //Testeo
 
 // Componente para rutas protegidas
 const ProtectedRoute = () => {
@@ -41,8 +39,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Ruta pública */ }
-        <Route path="/" element={<Prueba1/>} /> 
+        {/* Ruta pública */}
+        <Route path="/" element={<Login />} />
 
         {/* Rutas protegidas con Navigation */}
         <Route element={<ProtectedRoute />}>
