@@ -25,7 +25,7 @@ const Login = () => {
           console.log("Token de Google guardado:", googleToken);
 
           // Aquí podrías redirigir a una ruta especial si quieres:
-          navigate("/TesistaView"); // o a otro dashboard si prefieres
+          navigate("/asesor"); // o a otro dashboard si prefieres
         })
         .catch(() => console.error("Error autenticando con Google"));
     }
