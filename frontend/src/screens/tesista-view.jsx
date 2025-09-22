@@ -183,7 +183,7 @@ export default function TesistaView() {
                 <option value="">-- Selecciona una opción --</option>
                 <option value="">Registrar Proyecto de Tesis</option>
                 <option value="F.TITES 006">Testear Proyecto en Turnitin</option>
-                <option value="">Asesoría Semanal</option>
+                <option value="asesoria">Asesoría Semanal</option> {/* <- valor único */}
                 <option value="">Solicitar Revisión Final</option>
                 <option value="">Revisión Final</option>
                 <option value="">Cambiar Tesis</option>
@@ -207,34 +207,48 @@ export default function TesistaView() {
           {/* Listado de Archivos con diseño de tarjetas */}
           <div className="row">
             {files.length > 0 ? (
-              files
-              .filter(file => {
-                if (!file.name.includes("F.TITES")) return false;
-                if (filtroProceso) {
-                  return file.name.includes(filtroProceso);
-                }
-                return true; // mostrar todos si no hay filtro
-              })
-              .map((file) => (
-                <div className="col-md-12 p-2" key={file.id}>
-                  <Card className="mb-3">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
-                          {fileIcon}
-                          <div>
-                              <h5 className="mb-0">{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
-                              <small className="text-muted">{file.mimeType}</small>
-                          </div>
+          files
+            .filter(file => {
+              if (!file.name.includes("F.TITES")) return false;
+              if (filtroProceso === "asesoria") {
+                return (
+                  file.name.toUpperCase().includes("F.TITES 006") ||
+                  file.name.toUpperCase().includes("F.TITES 008")
+                );
+              }
+              if (filtroProceso) {
+                return file.name.toUpperCase().includes(filtroProceso.toUpperCase());
+              }
+              return true; // mostrar todos si no hay filtro
+            })
+            .map((file) => (
+              <div className="col-md-12 p-2" key={file.id}>
+                <Card className="mb-3">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div className="d-flex align-items-center">
+                        {fileIcon}
+                        <div>
+                          <h5 className="mb-0">
+                            {file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}
+                          </h5>
+                          <small className="text-muted">{file.mimeType}</small>
                         </div>
-                        <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
-                          Abrir
-                        </Button>
                       </div>
-                    </Card.Body>
-                  </Card>
-                </div>
-              ))
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        href={`https://docs.google.com/document/d/${file.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Abrir
+                      </Button>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </div>
+            ))
             ) : (
               <p>No se encontraron archivos en tu grupo. Puedes cargar los formularios base con el botón de arriba.</p>
             )}
