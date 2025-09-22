@@ -32,6 +32,9 @@ export default function TesistaView() {
   // El grupo seleccionado ahora es siempre nuestro objeto fijo
   const [grupoSeleccionado] = useState(grupoFijoParaTesista);
 
+  // --- NUEVO ESTADO PARA FILTRO ---
+  const [filtroProceso, setFiltroProceso] = useState(""); 
+
   // Estados para la lógica de duplicado
   const [formularios, setFormularios] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -170,6 +173,23 @@ export default function TesistaView() {
               <h3>Archivos de tu Grupo: <strong>{grupoSeleccionado.grupo}</strong></h3>
             </Col>
             <Col className="d-flex justify-content-end gap-2">
+              {/* --- NUEVO SELECTOR SOLO PARA TESTEAR PROYECTO --- */}
+              <Form.Select
+                size="sm"
+                value={filtroProceso}
+                onChange={(e) => setFiltroProceso(e.target.value)}
+                style={{ width: "250px", display: "inline-block" }}
+              >
+                <option value="">-- Selecciona una opción --</option>
+                <option value="">Registrar Proyecto de Tesis</option>
+                <option value="F.TITES 006">Testear Proyecto en Turnitin</option>
+                <option value="">Asesoría Semanal</option>
+                <option value="">Solicitar Revisión Final</option>
+                <option value="">Revisión Final</option>
+                <option value="">Cambiar Tesis</option>
+
+              </Form.Select>
+
               {/* Botón para Duplicar Formularios, ahora siempre actúa sobre el grupo fijo */}
               <Button variant="outline-warning" size="sm" onClick={confirmDuplicarFormularios} disabled={files.length > 0} >
                 Cargar Formularios a mi Grupo
@@ -188,7 +208,13 @@ export default function TesistaView() {
           <div className="row">
             {files.length > 0 ? (
               files
-              .filter(file => file.name.includes("F.TITES"))
+              .filter(file => {
+                if (!file.name.includes("F.TITES")) return false;
+                if (filtroProceso) {
+                  return file.name.includes(filtroProceso);
+                }
+                return true; // mostrar todos si no hay filtro
+              })
               .map((file) => (
                 <div className="col-md-12 p-2" key={file.id}>
                   <Card className="mb-3">
@@ -197,7 +223,7 @@ export default function TesistaView() {
                         <div className="d-flex align-items-center">
                           {fileIcon}
                           <div>
-                              <h5 className="mb-0">{file.name}</h5>
+                              <h5 className="mb-0">{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
                               <small className="text-muted">{file.mimeType}</small>
                           </div>
                         </div>
