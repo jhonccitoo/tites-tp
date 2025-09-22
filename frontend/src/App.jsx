@@ -10,6 +10,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
 import Noteslist from "./components/NotesList.jsx";
+import RegistrarUsuarioView from "./screens/registrar-usuario.jsx";
 import CreateNote from "./components/CreateNote";
 import CreateUser from "./components/CreateUser";
 import TesistaView from "./screens/tesista-view.jsx";
@@ -41,9 +42,10 @@ function App() {
       <Routes>
         {/* Ruta pública */}
         <Route path="/" element={<Login />} />
+  <Route path="/registrar-usuario" element={<RegistrarUsuarioView />} />
 
         {/* Rutas protegidas con Navigation */}
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute />}> 
           <Route path="/notas" element={<Noteslist />} />
           <Route path="/edit/:id" element={<CreateNote />} />
           <Route path="/create" element={<CreateNote />} />

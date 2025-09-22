@@ -8,27 +8,50 @@ userCtrl.getUsers = async (req, res) => {
 };
 
 userCtrl.createUser = async (req, res) => {
-    console.log('createUser function called:', req.body); 
-    const { username, password } = req.body;
+    console.log('createUser function called:', req.body);
+    const { nombre, apellido, correoInstitucional, password, pagoInscripcion } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
+    // Validaciones básicas
+    if (!nombre || !apellido || !correoInstitucional || !password || typeof pagoInscripcion === 'undefined') {
+        return res.status(400).json({ message: 'Todos los campos son requeridos.' });
     }
 
+    // Validación nombre y apellido: solo letras y tildes
+    const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/;
+    if (!regexNombre.test(nombre)) {
+        return res.status(400).json({ message: 'El nombre solo puede contener letras y tildes.' });
+    }
+    if (!regexNombre.test(apellido)) {
+        return res.status(400).json({ message: 'El apellido solo puede contener letras y tildes.' });
+    }
+
+    // Validación de correo institucional: solo @urp.edu.pe
+    const urpRegex = /^[^@\s]+@urp\.edu\.pe$/i;
+    if (!urpRegex.test(correoInstitucional)) {
+        return res.status(400).json({ message: 'El correo debe ser @urp.edu.pe.' });
+    }
+
+    // Todos los usuarios nuevos serán TESISTA
+    const rol = "TESISTA";
     const newUser = new User({
-        username: username,
-        password: password, // ¡Ahora guardamos la contraseña en texto plano aquí!
+        nombre,
+        apellido,
+        correoInstitucional,
+        usuario: correoInstitucional,
+        password,
+        pagoInscripcion,
+        rol
     });
 
     try {
-        await newUser.save(); // El middleware 'pre('save')' en el modelo la hasheará antes de guardar
-        res.status(201).json({ message: 'User Created' });
+        await newUser.save();
+        res.status(201).json({ message: 'Usuario creado exitosamente.' });
     } catch (error) {
-        console.error('Error creating user:', error);
-        if (error.code === 11000) { // Error de llave duplicada (username único)
-            return res.status(400).json({ message: 'Username already exists' });
+        console.error('Error creando usuario:', error);
+        if (error.code === 11000) {
+            return res.status(400).json({ message: 'El correo institucional ya está registrado.' });
         }
-        res.status(500).json({ message: 'Error creating user' });
+        res.status(500).json({ message: 'Error al crear usuario.' });
     }
 };
 
