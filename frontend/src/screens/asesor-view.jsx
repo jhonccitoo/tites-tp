@@ -125,27 +125,28 @@ export default function AsesorView() {
 
   // --- Maneja el cambio en el selector de grupos ---
   const handleGrupoChange = (e) => {
+    const selectedIndex = e.target.value;
+    if (selectedIndex === "") {
+      setGrupoSeleccionado(null);
+      setFilterActive(false); // Desactiva el filtro si no hay grupo seleccionado
+    } else {
+      setGrupoSeleccionado(grupos[selectedIndex]);
+      setFilterActive(false); // Desactiva el filtro al seleccionar un nuevo grupo
+    }
+  };
+
+  // --- Maneja el cambio en el selector de procesos ---
+  const handleProcesosChange = (e) => {
     const selectedValue = e.target.value;
-    // Si se selecciona la opción de validar, llamamos a la función y no cambiamos de grupo
     if (selectedValue === "validate_report") {
       handleValidateReport();
-      // Opcionalmente, puedes dejar el selector en el grupo actual
-      // o restablecerlo. Aquí lo restablecemos para evitar la selección
-      // persistente del filtro.
-      e.target.value = grupoSeleccionado
-        ? grupos.findIndex((g) => g._id === grupoSeleccionado._id)
-        : "";
     } else {
-      // Lógica normal de cambio de grupo
-      const selectedIndex = selectedValue;
-      if (selectedIndex === "") {
-        setGrupoSeleccionado(null);
-        setFilterActive(false); // Desactiva el filtro si no hay grupo seleccionado
-      } else {
-        setGrupoSeleccionado(grupos[selectedIndex]);
-        setFilterActive(false); // Desactiva el filtro al seleccionar un nuevo grupo
-      }
+      // Aquí puedes agregar la lógica para los otros procesos
+      setFilterActive(false);
+      setAlertMsg(`Se ha seleccionado el proceso: ${selectedValue}`);
     }
+    // Opcionalmente, puedes restablecer el selector
+    e.target.value = "";
   };
 
   return (
@@ -194,10 +195,30 @@ export default function AsesorView() {
         <Col md={9} className="p-4">
           {/* Fila de Controles Superiores */}
           <Row className="mb-4 align-items-center">
-            <Col md={8}>
+            <Col md={6}>
               <h3>Archivos de Grupos Asignados</h3>
             </Col>
-            <Col md={4} className="d-flex justify-content-end">
+            {/* Nuevo selector de Procesos */}
+            <Col md={3}>
+              <Form.Select
+                size="sm"
+                onChange={handleProcesosChange}
+                style={{ maxWidth: "250px" }}
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  -- Procesos --
+                </option>
+                <option value="Corregir proyecto de tesis">
+                  Corregir proyecto de tesis
+                </option>
+                <option value="Asesorar tesis">Asesorar tesis</option>
+                <option value="validate_report">
+                  Validar y Firmar Reporte de Avance Semanal
+                </option>
+              </Form.Select>
+            </Col>
+            <Col md={3} className="d-flex justify-content-end">
               {/* Selector de Grupos */}
               <Form.Select
                 size="sm"
@@ -215,11 +236,6 @@ export default function AsesorView() {
                     {grupo.grupo}
                   </option>
                 ))}
-                {grupoSeleccionado && (
-                  <option value="validate_report">
-                    Validar y Firmar Reporte de Avance Semanal
-                  </option>
-                )}
               </Form.Select>
             </Col>
           </Row>
