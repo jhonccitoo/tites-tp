@@ -38,7 +38,8 @@ export default function AsesorView() {
   const [files, setFiles] = useState([]);
   const [grupos, setGrupos] = useState([]);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
-  const [filteredFile, setFilteredFile] = useState(null); // Nuevo estado para el archivo filtrado
+  // Nuevo estado para el filtro
+  const [filterActive, setFilterActive] = useState(false);
 
   // Estado para alertas y mensajes al usuario
   const [alertMsg, setAlertMsg] = useState("");
@@ -64,16 +65,14 @@ export default function AsesorView() {
       });
   }, [asesorId]);
 
-  // Obtener los archivos cada vez que se selecciona un grupo nuevo
+  // Obtener los archivos cada vez que se selecciona un grupo nuevo o el filtro cambia
   useEffect(() => {
     if (grupoSeleccionado && token) {
       getFiles();
     } else {
       setFiles([]); // Limpia los archivos si no hay grupo seleccionado
     }
-    // Limpia el archivo filtrado cada vez que cambia el grupo
-    setFilteredFile(null);
-  }, [grupoSeleccionado, token]);
+  }, [grupoSeleccionado, token, filterActive]);
 
   // Función para obtener los archivos del grupo desde el backend
   const getFiles = async () => {
@@ -84,7 +83,21 @@ export default function AsesorView() {
         `http://localhost:4000/api/drive/files?folderId=${grupoSeleccionado.carpeta_grupo_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setFiles(res.data);
+
+      // Lógica de filtrado de archivos
+      if (filterActive) {
+        const filteredFiles = res.data.filter((file) =>
+          file.name.includes("F.TITES 008 Form")
+        );
+        setFiles(filteredFiles);
+        if (filteredFiles.length === 0) {
+          setAlertMsg(
+            "El formulario F.TITES 008 no se encuentra en este grupo."
+          );
+        }
+      } else {
+        setFiles(res.data);
+      }
     } catch (err) {
       console.error("Error obteniendo archivos:", err.response || err.message);
       setAlertMsg("Error al obtener los archivos del grupo.");
@@ -97,47 +110,41 @@ export default function AsesorView() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  // --- NUEVA FUNCIÓN PARA VALIDAR Y FILTRAR EL REPORTE ---
+  // --- NUEVA FUNCIÓN PARA VALIDAR Y FIRMAR EL REPORTE ---
   const handleValidateReport = () => {
     if (grupoSeleccionado) {
-      const formFile = files.find((file) => file.name.startsWith("F.008"));
-
-      if (formFile) {
-        setFilteredFile(formFile); // Guarda el archivo F.008 en el estado
-        setAlertMsg(
-          "Se encontró el Formulario F.008. Por favor, revísalo y valídalo."
-        );
-      } else {
-        setFilteredFile(null);
-        setAlertMsg(
-          "El Formulario F.008 no se encuentra en la carpeta del grupo."
-        );
-      }
-    } else {
+      // Activa el filtro para mostrar solo el formulario F.TITES 008
+      setFilterActive(true);
       setAlertMsg(
-        "Por favor, selecciona un grupo antes de validar el reporte."
+        `Mostrando solo el formulario F.TITES 008 para el grupo: ${grupoSeleccionado.grupo}`
       );
+    } else {
+      alert("Por favor, selecciona un grupo antes de validar el reporte.");
     }
   };
 
   // --- Maneja el cambio en el selector de grupos ---
   const handleGrupoChange = (e) => {
     const selectedValue = e.target.value;
+    // Si se selecciona la opción de validar, llamamos a la función y no cambiamos de grupo
     if (selectedValue === "validate_report") {
       handleValidateReport();
-      // Opcional: puedes dejar el selector mostrando el grupo actual para que no se "resetee"
+      // Opcionalmente, puedes dejar el selector en el grupo actual
+      // o restablecerlo. Aquí lo restablecemos para evitar la selección
+      // persistente del filtro.
       e.target.value = grupoSeleccionado
         ? grupos.findIndex((g) => g._id === grupoSeleccionado._id)
         : "";
     } else {
+      // Lógica normal de cambio de grupo
       const selectedIndex = selectedValue;
       if (selectedIndex === "") {
         setGrupoSeleccionado(null);
+        setFilterActive(false); // Desactiva el filtro si no hay grupo seleccionado
       } else {
         setGrupoSeleccionado(grupos[selectedIndex]);
+        setFilterActive(false); // Desactiva el filtro al seleccionar un nuevo grupo
       }
-      // Asegúrate de resetear el archivo filtrado cuando se cambia de grupo
-      setFilteredFile(null);
     }
   };
 
@@ -222,40 +229,6 @@ export default function AsesorView() {
           {/* Listado de Archivos con diseño de tarjetas */}
           <div className="row">
             {grupoSeleccionado ? (
-              filteredFile ? ( // Muestra el archivo filtrado si existe
-                <div className="col-md-12 p-2" key={filteredFile.id}>
-                  <Card className="mb-3 border border-success">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
-                          {fileIcon}
-                          <div>
-                            <h5 className="mb-0">**{filteredFile.name}**</h5>
-                            <small className="text-muted">
-                              {filteredFile.mimeType}
-                            </small>
-                          </div>
-                        </div>
-                        <div className="d-flex gap-2">
-                          <Button variant="success" size="sm">
-                            Firmar
-                          </Button>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => handleOpenFile(filteredFile.id)}
-                          >
-                            Ver Archivo
-                          </Button>
-                        </div>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                  <p className="mt-3">
-                    Aquí puedes proceder a la firma del documento.
-                  </p>
-                </div>
-              ) : // Muestra la lista completa si no hay filtro
               files.length > 0 ? (
                 files.map((file) => (
                   <div className="col-md-12 p-2" key={file.id}>
@@ -290,8 +263,9 @@ export default function AsesorView() {
                 ))
               ) : (
                 <p>
-                  El grupo <strong>{grupoSeleccionado.grupo}</strong> no tiene
-                  archivos actualmente.
+                  {filterActive
+                    ? `El formulario F.TITES 008 no se encuentra en este grupo.`
+                    : `El grupo ${grupoSeleccionado.grupo} no tiene archivos actualmente.`}
                 </p>
               )
             ) : (
