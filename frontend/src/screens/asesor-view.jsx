@@ -33,7 +33,6 @@ const fileIcon = (
 
 // Componente funcional con Hooks
 export default function AsesorView() {
-  
   // --- Estados para manejar la UI y los datos ---
   const [usuario] = useState({ rol: localStorage.getItem("userRole") });
   const [files, setFiles] = useState([]);
