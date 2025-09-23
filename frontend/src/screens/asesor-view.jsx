@@ -38,6 +38,7 @@ export default function AsesorView() {
   const [files, setFiles] = useState([]);
   const [grupos, setGrupos] = useState([]);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
+  const [filteredFile, setFilteredFile] = useState(null); // Nuevo estado para el archivo filtrado
 
   // Estado para alertas y mensajes al usuario
   const [alertMsg, setAlertMsg] = useState("");
@@ -70,6 +71,8 @@ export default function AsesorView() {
     } else {
       setFiles([]); // Limpia los archivos si no hay grupo seleccionado
     }
+    // Limpia el archivo filtrado cada vez que cambia el grupo
+    setFilteredFile(null);
   }, [grupoSeleccionado, token]);
 
   // Función para obtener los archivos del grupo desde el backend
@@ -94,19 +97,26 @@ export default function AsesorView() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  // --- NUEVA FUNCIÓN PARA VALIDAR Y FIRMAR EL REPORTE ---
+  // --- NUEVA FUNCIÓN PARA VALIDAR Y FILTRAR EL REPORTE ---
   const handleValidateReport = () => {
-    // Aquí puedes implementar la lógica para validar y firmar el reporte.
-    // Podrías mostrar un modal de confirmación y luego enviar
-    // una solicitud a tu API para realizar la acción.
     if (grupoSeleccionado) {
-      alert(
-        `Validando y firmando el reporte del grupo: ${grupoSeleccionado.grupo}`
-      );
-      // Lógica de validación y firma iría aquí
-      // Ejemplo: axios.post('http://localhost:4000/api/report/validate', { grupoId: grupoSeleccionado._id });
+      const formFile = files.find((file) => file.name.startsWith("F.008"));
+
+      if (formFile) {
+        setFilteredFile(formFile); // Guarda el archivo F.008 en el estado
+        setAlertMsg(
+          "Se encontró el Formulario F.008. Por favor, revísalo y valídalo."
+        );
+      } else {
+        setFilteredFile(null);
+        setAlertMsg(
+          "El Formulario F.008 no se encuentra en la carpeta del grupo."
+        );
+      }
     } else {
-      alert("Por favor, selecciona un grupo antes de validar el reporte.");
+      setAlertMsg(
+        "Por favor, selecciona un grupo antes de validar el reporte."
+      );
     }
   };
 
@@ -114,20 +124,20 @@ export default function AsesorView() {
   const handleGrupoChange = (e) => {
     const selectedValue = e.target.value;
     if (selectedValue === "validate_report") {
-      // Si se selecciona la opción de validar, llamamos a la función y no cambiamos de grupo.
       handleValidateReport();
-      // Opcionalmente, puedes restablecer el selector a su estado anterior.
+      // Opcional: puedes dejar el selector mostrando el grupo actual para que no se "resetee"
       e.target.value = grupoSeleccionado
         ? grupos.findIndex((g) => g._id === grupoSeleccionado._id)
         : "";
     } else {
-      // Lógica normal de cambio de grupo
       const selectedIndex = selectedValue;
       if (selectedIndex === "") {
         setGrupoSeleccionado(null);
       } else {
         setGrupoSeleccionado(grupos[selectedIndex]);
       }
+      // Asegúrate de resetear el archivo filtrado cuando se cambia de grupo
+      setFilteredFile(null);
     }
   };
 
@@ -198,12 +208,6 @@ export default function AsesorView() {
                     {grupo.grupo}
                   </option>
                 ))}
-                {/* --- NUEVA OPCIÓN EN EL MENÚ DESPLEGABLE --- */}
-                {grupoSeleccionado && (
-                  <option value="validate_report">
-                    ------------------------------
-                  </option>
-                )}
                 {grupoSeleccionado && (
                   <option value="validate_report">
                     Validar y Firmar Reporte de Avance Semanal
@@ -218,6 +222,40 @@ export default function AsesorView() {
           {/* Listado de Archivos con diseño de tarjetas */}
           <div className="row">
             {grupoSeleccionado ? (
+              filteredFile ? ( // Muestra el archivo filtrado si existe
+                <div className="col-md-12 p-2" key={filteredFile.id}>
+                  <Card className="mb-3 border border-success">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center">
+                          {fileIcon}
+                          <div>
+                            <h5 className="mb-0">**{filteredFile.name}**</h5>
+                            <small className="text-muted">
+                              {filteredFile.mimeType}
+                            </small>
+                          </div>
+                        </div>
+                        <div className="d-flex gap-2">
+                          <Button variant="success" size="sm">
+                            Firmar
+                          </Button>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleOpenFile(filteredFile.id)}
+                          >
+                            Ver Archivo
+                          </Button>
+                        </div>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                  <p className="mt-3">
+                    Aquí puedes proceder a la firma del documento.
+                  </p>
+                </div>
+              ) : // Muestra la lista completa si no hay filtro
               files.length > 0 ? (
                 files.map((file) => (
                   <div className="col-md-12 p-2" key={file.id}>
