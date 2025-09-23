@@ -88,21 +88,47 @@ export default function AsesorView() {
     }
   };
 
-  // Maneja el cambio en el selector de grupos
-  const handleGrupoChange = (e) => {
-    const selectedIndex = e.target.value;
-    if (selectedIndex === "") {
-      setGrupoSeleccionado(null);
+  // Función para abrir archivos en una nueva pestaña
+  const handleOpenFile = (fileId) => {
+    const url = `https://drive.google.com/file/d/${fileId}/view`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  // --- NUEVA FUNCIÓN PARA VALIDAR Y FIRMAR EL REPORTE ---
+  const handleValidateReport = () => {
+    // Aquí puedes implementar la lógica para validar y firmar el reporte.
+    // Podrías mostrar un modal de confirmación y luego enviar
+    // una solicitud a tu API para realizar la acción.
+    if (grupoSeleccionado) {
+      alert(
+        `Validando y firmando el reporte del grupo: ${grupoSeleccionado.grupo}`
+      );
+      // Lógica de validación y firma iría aquí
+      // Ejemplo: axios.post('http://localhost:4000/api/report/validate', { grupoId: grupoSeleccionado._id });
     } else {
-      setGrupoSeleccionado(grupos[selectedIndex]);
+      alert("Por favor, selecciona un grupo antes de validar el reporte.");
     }
   };
 
-  // Función para abrir archivos en una nueva pestaña
-  const handleOpenFile = (fileId) => {
-    // Puedes construir la URL como necesites. Esta es una URL genérica de previsualización.
-    const url = `https://drive.google.com/file/d/${fileId}/view`;
-    window.open(url, "_blank", "noopener,noreferrer");
+  // --- Maneja el cambio en el selector de grupos ---
+  const handleGrupoChange = (e) => {
+    const selectedValue = e.target.value;
+    if (selectedValue === "validate_report") {
+      // Si se selecciona la opción de validar, llamamos a la función y no cambiamos de grupo.
+      handleValidateReport();
+      // Opcionalmente, puedes restablecer el selector a su estado anterior.
+      e.target.value = grupoSeleccionado
+        ? grupos.findIndex((g) => g._id === grupoSeleccionado._id)
+        : "";
+    } else {
+      // Lógica normal de cambio de grupo
+      const selectedIndex = selectedValue;
+      if (selectedIndex === "") {
+        setGrupoSeleccionado(null);
+      } else {
+        setGrupoSeleccionado(grupos[selectedIndex]);
+      }
+    }
   };
 
   return (
@@ -134,7 +160,6 @@ export default function AsesorView() {
           </div>
 
           <div className="d-grid gap-2">
-            {/* Puedes dejar esto o quitarlo, ya que la selección principal estará bloqueada */}
             <Button variant="outline-light">Mis Datos Personales</Button>
             <Button variant="outline-light">Formularios</Button>
             <Button variant="outline-light">Tesis</Button>
@@ -173,6 +198,17 @@ export default function AsesorView() {
                     {grupo.grupo}
                   </option>
                 ))}
+                {/* --- NUEVA OPCIÓN EN EL MENÚ DESPLEGABLE --- */}
+                {grupoSeleccionado && (
+                  <option value="validate_report">
+                    ------------------------------
+                  </option>
+                )}
+                {grupoSeleccionado && (
+                  <option value="validate_report">
+                    Validar y Firmar Reporte de Avance Semanal
+                  </option>
+                )}
               </Form.Select>
             </Col>
           </Row>
@@ -198,7 +234,6 @@ export default function AsesorView() {
                             </div>
                           </div>
                           <div className="d-flex gap-2">
-                            {/* Puedes añadir botones para calificar aquí */}
                             <Button variant="secondary" size="sm">
                               Calificar
                             </Button>
