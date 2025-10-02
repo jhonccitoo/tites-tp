@@ -12,14 +12,17 @@ import "./App.css";
 import Noteslist from "./components/NotesList.jsx";
 import CreateNote from "./components/CreateNote";
 import CreateUser from "./components/CreateUser";
-import TesistaView from "./screens/tesista-view.jsx";
+//import TesistaView from "./screens/tesista-view.jsx";
 import Login from "./screens/login.jsx";
 import Navigation from "./components/Navigation";
 import MetodologoView from "./screens/metodologo-view.jsx";
 import Revisor1View from "./screens/revisor1-view.jsx";
 import Revisor2View from "./screens/revisor2-view.jsx";
 //import Asesor from "./screens/asesor-view.jsx";
+//Agregados RegistroProyecto
+import TesistaView from "./screens/registro-proyectoTESISTA.jsx";
 import Asesor from "./screens/registro-proyectoAsesor.jsx";
+//------
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
 import DriveViewer from "./screens/DriveViewer";
 
