@@ -21,9 +21,9 @@ export default function TesistaView() {
   // --- CAMBIO 1: Creamos un objeto fijo para el grupo del tesista y eliminamos el estado 'grupos' ---
   const grupoFijoParaTesista = {
       _id: 'grupo_tesista_fijo', // ID de placeholder
-      grupo: 'Grupo 1',
+      grupo: 'Grupo 01',
       // Este es el ID de la carpeta de Drive que especificaste
-      carpeta_grupo_id: '1vKQOc4cWIV4yEvNYoCiaGyl_XvKbjw_q' 
+      carpeta_grupo_id: '1LUqWYqCchFLnsgwcKvK7qB3UtgV_eyYs' 
   };
   
   // --- Estados del componente ---
@@ -209,18 +209,26 @@ export default function TesistaView() {
             {files.length > 0 ? (
           files
             .filter(file => {
-              if (!file.name.includes("F.TITES")) return false;
-              if (filtroProceso === "asesoria") {
-                return (
-                  file.name.toUpperCase().includes("F.TITES 006") ||
-                  file.name.toUpperCase().includes("F.TITES 008")
-                );
-              }
-              if (filtroProceso) {
-                return file.name.toUpperCase().includes(filtroProceso.toUpperCase());
-              }
-              return true; // mostrar todos si no hay filtro
-            })
+                    const nombre = file.name.toUpperCase().trim().replace(/^COPIA DE /, "");
+
+                    // Solo archivos F.TITES
+                    if (!nombre.includes("F.TITES")) return false;
+
+                    // Mostrar ambos formularios si selecciona asesoría
+                    if (filtroProceso === "asesoria") {
+                      return (
+                        nombre.includes("F.TITES 006") ||
+                        nombre.includes("F.TITES 008")
+                      );
+                    }
+
+                    // Mostrar todos si no hay filtro o coincide el texto exacto del filtro
+                    if (filtroProceso) {
+                      return nombre.includes(filtroProceso.toUpperCase());
+                    }
+
+                    return true;
+                  })
             .map((file) => (
               <div className="col-md-12 p-2" key={file.id}>
                 <Card className="mb-3">
@@ -235,15 +243,27 @@ export default function TesistaView() {
                           <small className="text-muted">{file.mimeType}</small>
                         </div>
                       </div>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        href={`https://docs.google.com/document/d/${file.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Abrir
-                      </Button>
+                      {/* Botones de acción */}
+                      <div className="d-flex gap-2">
+                        {file.name.toUpperCase().includes("F.TITES 008") && (
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            onClick={() => handleEnviarFormulario(file)}
+                          >
+                            Enviar Formulario Semanal
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          href={`https://docs.google.com/document/d/${file.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Abrir
+                        </Button>
+                      </div>
                     </div>
                   </Card.Body>
                 </Card>
