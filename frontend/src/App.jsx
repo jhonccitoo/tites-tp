@@ -21,6 +21,7 @@ import Revisor2View from "./screens/revisor2-view.jsx";
 import Asesor from "./screens/asesor-view.jsx";
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
 import DriveViewer from "./screens/DriveViewer";
+import CoordinadorAcademicoView from "./screens/coordinadorAcademico.jsx";
 
 // Componente para rutas protegidas
 const ProtectedRoute = () => {
@@ -55,6 +56,7 @@ function App() {
           <Route path="/revisor1" element={<Revisor1View />} />
           <Route path="/revisor2" element={<Revisor2View />} />
           <Route path="/drive" element={<DriveViewer />} />
+          <Route path="/coordinadorAcademico" element={<CoordinadorAcademicoView />} />
         </Route>
 
         {/* Catch-all redirect */}
