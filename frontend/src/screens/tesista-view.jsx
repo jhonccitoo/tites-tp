@@ -134,6 +134,10 @@ export default function TesistaView() {
 
   // --- CAMBIO 3: La función handleGrupoChange ya no es necesaria y se puede eliminar ---
 
+  // --- NUEVOS ESTADOS PARA EL MODAL DE ESTADO ---
+  const [showEstadoModal, setShowEstadoModal] = useState(false);
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+
   return (
     <Container fluid>
       <Row>
@@ -263,6 +267,21 @@ export default function TesistaView() {
                         >
                           Abrir
                         </Button>
+                        <div className="d-flex gap-2">
+                          <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
+                            Abrir
+                          </Button>
+                          <Button variant="outline-success" size="sm" onClick={() => {
+                            setArchivoSeleccionado({
+                              name: file.name,
+                              estado: "Rechazado",
+                              comentarios: "Sin observaciones."
+                            });
+                            setShowEstadoModal(true);
+                          }}>
+                            Ver Estado
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </Card.Body>
@@ -305,6 +324,50 @@ export default function TesistaView() {
                   <button type="button" className="btn btn-warning" onClick={handleDuplicarConfirmado}>Confirmar Carga</button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Modal Estado y Correcciones --- */}
+      {showEstadoModal && archivoSeleccionado && (
+        <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Estado del Formulario</h5>
+                <button type="button" className="btn-close" onClick={() => setShowEstadoModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>Archivo:</strong> {archivoSeleccionado.name}</p>
+                <p><strong>Estado:</strong> 
+                  <span className={
+                    archivoSeleccionado.estado === "Aprobado" ? "text-success fw-bold" :
+                    archivoSeleccionado.estado === "Rechazado" ? "text-danger fw-bold" :
+                    "text-warning fw-bold"
+                  }>
+                    {archivoSeleccionado.estado}
+                  </span>
+                </p>
+                <p><strong>Correcciones:</strong></p>
+                <div className="border p-2 rounded bg-light">
+                  {archivoSeleccionado.comentarios}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <Button variant="secondary" onClick={() => setShowEstadoModal(false)}>Cerrar</Button>
+                {archivoSeleccionado.estado === "Rechazado" && ( // En caso de Rechazo se pide otra revision
+                <Button variant="primary" onClick={() => {setArchivoSeleccionado({
+                      ...archivoSeleccionado,
+                      estado: "Pendiente",
+                      comentarios: "Se ha solicitado una nueva revisión.",
+                    });
+                  }}
+                >
+                  Pedir otra aprobación
+                </Button>
+              )}
+              </div>
             </div>
           </div>
         </div>
