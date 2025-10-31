@@ -6,21 +6,31 @@ import Navbar from "react-bootstrap/Navbar";
 
 export default class Navigation extends Component {
   render() {
-    const usuario ={rol: localStorage.getItem('userRole')} ;
+    const usuario = { rol: localStorage.getItem('userRole') };
+
     return (
- <> <Navbar bg="light" data-bs-theme="light">
-            <Container>
-              <Navbar.Brand href="/">TITES - URP</Navbar.Brand>
-              <Nav className="me-right">
-              {usuario?.rol == 'admin' && (
+      <>
+        <Navbar bg="light" data-bs-theme="light">
+          <Container>
+            <Navbar.Brand href="/">TITES - URP</Navbar.Brand>
+            <Nav className="me-right">
+              {/* Opción solo para ADMIN */}
+              {usuario?.rol === 'admin' && (
                 <Nav.Link href="/notas">Formularios</Nav.Link>
               )}
-                {usuario?.rol !== 'tesista' && (
+
+              {/* Opción para todos menos TESISTA */}
+              {usuario?.rol !== 'tesista' && (
                 <Nav.Link href="/create">Crear Formularios</Nav.Link>
-                )}
-              </Nav>
-            </Container>
-          </Navbar> 
+              )}
+
+              {/* Opción solo para SECRETARIA */}
+              {usuario?.rol === 'secretaria' && (
+                <Nav.Link href="/secretaria">Secretaría</Nav.Link>
+              )}
+            </Nav>
+          </Container>
+        </Navbar>
       </>
     );
   }
