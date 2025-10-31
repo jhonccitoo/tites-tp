@@ -1,13 +1,31 @@
+// routes/users.js
 const express = require('express');
 const router = express.Router();
-const { getUsers, createUser, deleteUser } = require('../controllers/user.controller'); // Importa tu controlador de usuario
+const {
+  getUsers,
+  createUser,
+  deleteUser
+} = require('../controllers/user.controller');
 
-// Ruta para CREAR un nuevo usuario
-router.post('/', createUser); // Llama a la función createUser de tu controlador
+// RUTA para CREAR un nuevo usuario
+router.post('/', createUser);
 
-// Ruta para OBTENER todos los usuarios
-router.get('/', getUsers); // Llama a la función getUsers de tu controlador
+// RUTA para OBTENER todos los usuarios
+router.get('/', getUsers);
 
-router.delete('/:id', deleteUser); 
+// RUTA para ELIMINAR un usuario
+router.delete('/:id', deleteUser);
+
+// RUTA específica: obtener solo secretarias
+router.get('/secretarias', async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const secretarias = await User.find({ role: 'secretaria' });
+    res.json(secretarias);
+  } catch (err) {
+    console.error('Error al obtener secretarias:', err);
+    res.status(500).json({ message: 'Error al obtener secretarias' });
+  }
+});
 
 module.exports = router;

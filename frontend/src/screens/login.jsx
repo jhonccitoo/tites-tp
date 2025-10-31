@@ -79,7 +79,7 @@ const Login = () => {
           } else if (userRole === "coordinador general") {
             navigate("/coordinadorgeneral"); // O redirige a notas por ahora
           } else if (userRole === "secretaria") {
-            navigate("/notas"); // Redirige tesista
+            navigate("/secretaria");
           } else if (userRole === "metodologo") {
             navigate("/MetodologoView"); // Redirige admin
           } else {
@@ -312,6 +312,15 @@ const Login = () => {
             }}
           >
             Iniciar sesión con Google
+          </button>
+
+
+          <button
+            type="button"
+            className="btn btn-register"
+            onClick={() => navigate("/secretaria")}
+          >
+            Ir a Secretaría
           </button>
 
           <button type="button" className="btn btn-register">
