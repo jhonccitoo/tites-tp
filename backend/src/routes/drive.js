@@ -179,5 +179,155 @@ router.get('/asesor/:id', async (req, res) => {
     res.status(500).json({ error: 'No se pudieron obtener las carpetas' });
   }
 });
+// List only files that START WITH "F.TITES 007" in a folder
+router.get('/coordinadoracademico/tesis007', authenticate, async (req, res) => {
+  try {
+    const targetFolder = req.query.folderId || process.env.DEFAULT_DRIVE_FOLDER_ID;
+    if (!targetFolder) return res.status(400).json({ error: 'Falta folderId (o DEFAULT_DRIVE_FOLDER_ID)' });
+
+    const { data } = await req.drive.files.list({
+      q: `'${targetFolder}' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder' and name contains 'F.TITES 007'`,
+      fields: 'files(id,name,mimeType,modifiedTime,webViewLink)',
+      orderBy: 'modifiedTime desc',
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      pageSize: 1000,
+    });
+
+    const norm = s => (s||'').toUpperCase().replace(/\s+/g,' ').trim();
+    const archivos = (data.files || []).filter(f => norm(f.name).startsWith('F.TITES 007'));
+
+    res.json({ count: archivos.length, archivos });
+  } catch (err) {
+    console.error('F.TITES 007 list error:', err.message);
+    res.status(500).json({ error: 'No se pudo listar F.TITES 007' });
+  }
+});
+router.get('/coordinadoracademico/tesis007/:fileId/download', authenticate, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const meta = await req.drive.files.get({
+      fileId,
+      fields: 'name,mimeType',
+      supportsAllDrives: true,
+    });
+
+    res.setHeader('Content-Disposition', `attachment; filename="${meta.data.name}"`);
+    res.setHeader('Content-Type', meta.data.mimeType || 'application/pdf');
+
+    const dl = await req.drive.files.get(
+      { fileId, alt: 'media', supportsAllDrives: true },
+      { responseType: 'stream' }
+    );
+
+    dl.data.on('error', e => {
+      console.error('download error:', e.message);
+      res.status(500).end();
+    }).pipe(res);
+  } catch (err) {
+    console.error('download error:', err.message);
+    res.status(500).json({ error: 'No se pudo descargar' });
+  }
+});
+
+router.get('/coordinador-academico/debug-children', authenticate, async (req, res) => {
+  try {
+    const folderId = req.query.folderId || process.env.DRIVE_ROOT_STUDENTS_FOLDER_ID || process.env.DEFAULT_DRIVE_FOLDER_ID;
+    if (!folderId) return res.status(400).json({ error: 'Provide ?folderId or set DRIVE_ROOT_STUDENTS_FOLDER_ID' });
+
+    const { data } = await req.drive.files.list({
+      q: `'${folderId}' in parents and trashed=false`,
+      fields: 'files(id,name,mimeType)',
+      orderBy: 'name',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      pageSize: 1000,
+    });
+    res.json(data.files || []);
+  } catch (e) {
+    console.error('debug-children error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/drive/coordinador-academico/tesis007/groups?rootId=<optional>&prefix=<optional>
+router.get('/coordinador-academico/tesis007/groups', authenticate, async (req, res) => {
+  try {
+    const drive = req.drive;
+    const rootId = req.query.rootId || process.env.DRIVE_ROOT_STUDENTS_FOLDER_ID || process.env.DEFAULT_DRIVE_FOLDER_ID;
+    const prefixRaw = (req.query.prefix || 'F.TITES 007').trim();
+    if (!rootId) return res.status(400).json({ error: 'Missing rootId/DRIVE_ROOT_STUDENTS_FOLDER_ID' });
+
+    const norm = (s) => (s || '').toUpperCase().replace(/\s+/g, ' ').trim();
+    const startsWithWanted = (name) => norm(name).startsWith(norm(prefixRaw));
+
+    const listChildren = async (parentId, onlyFolders = false) => {
+      const typeQ = onlyFolders
+        ? "mimeType='application/vnd.google-apps.folder'"
+        : "mimeType!='application/vnd.google-apps.folder'";
+      const { data } = await drive.files.list({
+        q: `'${parentId}' in parents and ${typeQ} and trashed=false`,
+        fields: 'files(id,name,mimeType,modifiedTime,webViewLink,iconLink,size)',
+        orderBy: 'name',
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true,
+        pageSize: 1000,
+      });
+      return data.files || [];
+    };
+
+    // 1) group folders directly under root
+    const groups = await listChildren(rootId, true);
+
+    // 2) for each group, list files in that folder (NO student subfolders)
+    const results = [];
+    for (const g of groups) {
+      const files = await listChildren(g.id, false);
+      const hits = files.filter(f => startsWithWanted(f.name));
+      results.push({
+        groupFolderId: g.id,
+        groupName: g.name,
+        files: hits, // may be empty
+        groupWebLink: `https://drive.google.com/drive/folders/${g.id}`,
+      });
+    }
+
+    res.json(results);
+  } catch (err) {
+    console.error('tesis007/groups error:', err.message);
+    res.status(500).json({ error: 'Cannot list groups/files' });
+  }
+});
+router.get('/oauth2callback', async (req, res) => {
+  const { code, error } = req.query;
+  if (error) return res.status(400).send(`<pre>Google OAuth error: ${error}</pre>`);
+  if (!code) return res.status(400).send('<pre>Missing ?code</pre>');
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.send(`
+<!doctype html><html><body>
+<script>
+  (function () {
+    const payload = {
+      ok: true,
+      source: 'tites-drive-oauth',
+      tokens: { access_token: ${JSON.stringify(tokens.access_token || '')} }
+    };
+    if (window.opener && payload.tokens.access_token) {
+      window.opener.postMessage(payload, window.location.origin.replace(':4000', ':5173'));
+    }
+    document.body.innerText = 'Google Drive connected. You can close this tab.';
+    setTimeout(() => window.close(), 800);
+  })();
+</script>
+</body></html>
+    `);
+  } catch (e) {
+    console.error('OAuth exchange error:', e);
+    res.status(500).send('<pre>Failed to exchange code for tokens.</pre>');
+  }
+});
+
 
 module.exports = router;

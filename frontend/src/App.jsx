@@ -28,6 +28,7 @@ import Asesor from "./screens/registro-proyectoAsesor.jsx";
 
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
 import DriveViewer from "./screens/DriveViewer";
+import CoordinadorAcademicoView from "./screens/coordinadorAcademico.jsx";
 
 // Componente para rutas protegidas
 const ProtectedRoute = () => {
@@ -52,6 +53,21 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/secretaria" element={<Secretaria />} />
 
+        {/* Rutas protegidas con Navigation */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/notas" element={<Noteslist />} />
+          <Route path="/edit/:id" element={<CreateNote />} />
+          <Route path="/create" element={<CreateNote />} />
+          <Route path="/user" element={<CreateUser />} />
+          <Route path="/TesistaView" element={<TesistaView />} />
+          <Route path="/MetodologoView" element={<MetodologoView />} />
+          <Route path="/asesor" element={<Asesor />} />
+          <Route path="/coordinadorGeneral" element={<CoordinadorGeneralView />} />
+          <Route path="/revisor1" element={<Revisor1View />} />
+          <Route path="/revisor2" element={<Revisor2View />} />
+          <Route path="/drive" element={<DriveViewer />} />
+          <Route path="/coordinadorAcademico" element={<CoordinadorAcademicoView />} />
+        </Route>
           {/* Rutas protegidas con Navigation */}
           <Route element={<ProtectedRoute />}>
             <Route path="/notas" element={<Noteslist />} />
