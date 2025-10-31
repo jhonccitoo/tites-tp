@@ -75,7 +75,7 @@ const Login = () => {
           } else if (userRole === "coordinador general") {
             navigate("/coordinadorgeneral");
           } else if (userRole === "secretaria") {
-            navigate("/notas");
+            navigate("/secretaria");
           } else if (userRole === "metodologo") {
             navigate("/MetodologoView");
           } else {
@@ -313,11 +313,16 @@ const Login = () => {
             Iniciar sesión con Google
           </button>
 
+
           <button
             type="button"
             className="btn btn-register"
-            onClick={() => navigate('/registrar-usuario')}
+            onClick={() => navigate("/secretaria")}
           >
+            Ir a Secretaría
+          </button>
+
+          <button type="button" className="btn btn-register">
             Registrarse
           </button>
 
