@@ -32,6 +32,9 @@ export default function TesistaView() {
   // El grupo seleccionado ahora es siempre nuestro objeto fijo
   const [grupoSeleccionado] = useState(grupoFijoParaTesista);
 
+  // --- NUEVO ESTADO PARA FILTRO ---
+  const [filtroProceso, setFiltroProceso] = useState(""); 
+
   // Estados para la lógica de duplicado
   const [formularios, setFormularios] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -131,6 +134,10 @@ export default function TesistaView() {
 
   // --- CAMBIO 3: La función handleGrupoChange ya no es necesaria y se puede eliminar ---
 
+  // --- NUEVOS ESTADOS PARA EL MODAL DE ESTADO ---
+  const [showEstadoModal, setShowEstadoModal] = useState(false);
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+
   return (
     <Container fluid>
       <Row>
@@ -170,6 +177,23 @@ export default function TesistaView() {
               <h3>Archivos de tu Grupo: <strong>{grupoSeleccionado.grupo}</strong></h3>
             </Col>
             <Col className="d-flex justify-content-end gap-2">
+              {/* --- NUEVO SELECTOR SOLO PARA TESTEAR PROYECTO --- */}
+              <Form.Select
+                size="sm"
+                value={filtroProceso}
+                onChange={(e) => setFiltroProceso(e.target.value)}
+                style={{ width: "250px", display: "inline-block" }}
+              >
+                <option value="">-- Selecciona una opción --</option>
+                <option value="">Registrar Proyecto de Tesis</option>
+                <option value="F.TITES 006">Testear Proyecto en Turnitin</option>
+                <option value="">Asesoría Semanal</option>
+                <option value="">Solicitar Revisión Final</option>
+                <option value="">Revisión Final</option>
+                <option value="">Cambiar Tesis</option>
+
+              </Form.Select>
+
               {/* Botón para Duplicar Formularios, ahora siempre actúa sobre el grupo fijo */}
               <Button variant="outline-warning" size="sm" onClick={confirmDuplicarFormularios} disabled={files.length > 0} >
                 Cargar Formularios a mi Grupo
@@ -188,7 +212,13 @@ export default function TesistaView() {
           <div className="row">
             {files.length > 0 ? (
               files
-              .filter(file => file.name.includes("F.TITES"))
+              .filter(file => {
+                if (!file.name.includes("F.TITES")) return false;
+                if (filtroProceso) {
+                  return file.name.includes(filtroProceso);
+                }
+                return true; // mostrar todos si no hay filtro
+              })
               .map((file) => (
                 <div className="col-md-12 p-2" key={file.id}>
                   <Card className="mb-3">
@@ -197,13 +227,25 @@ export default function TesistaView() {
                         <div className="d-flex align-items-center">
                           {fileIcon}
                           <div>
-                              <h5 className="mb-0">{file.name}</h5>
+                              <h5 className="mb-0">{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
                               <small className="text-muted">{file.mimeType}</small>
                           </div>
                         </div>
-                        <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
-                          Abrir
-                        </Button>
+                        <div className="d-flex gap-2">
+                          <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
+                            Abrir
+                          </Button>
+                          <Button variant="outline-success" size="sm" onClick={() => {
+                            setArchivoSeleccionado({
+                              name: file.name,
+                              estado: "Rechazado",
+                              comentarios: "Sin observaciones."
+                            });
+                            setShowEstadoModal(true);
+                          }}>
+                            Ver Estado
+                          </Button>
+                        </div>
                       </div>
                     </Card.Body>
                   </Card>
@@ -245,6 +287,50 @@ export default function TesistaView() {
                   <button type="button" className="btn btn-warning" onClick={handleDuplicarConfirmado}>Confirmar Carga</button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- Modal Estado y Correcciones --- */}
+      {showEstadoModal && archivoSeleccionado && (
+        <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Estado del Formulario</h5>
+                <button type="button" className="btn-close" onClick={() => setShowEstadoModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p><strong>Archivo:</strong> {archivoSeleccionado.name}</p>
+                <p><strong>Estado:</strong> 
+                  <span className={
+                    archivoSeleccionado.estado === "Aprobado" ? "text-success fw-bold" :
+                    archivoSeleccionado.estado === "Rechazado" ? "text-danger fw-bold" :
+                    "text-warning fw-bold"
+                  }>
+                    {archivoSeleccionado.estado}
+                  </span>
+                </p>
+                <p><strong>Correcciones:</strong></p>
+                <div className="border p-2 rounded bg-light">
+                  {archivoSeleccionado.comentarios}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <Button variant="secondary" onClick={() => setShowEstadoModal(false)}>Cerrar</Button>
+                {archivoSeleccionado.estado === "Rechazado" && ( // En caso de Rechazo se pide otra revision
+                <Button variant="primary" onClick={() => {setArchivoSeleccionado({
+                      ...archivoSeleccionado,
+                      estado: "Pendiente",
+                      comentarios: "Se ha solicitado una nueva revisión.",
+                    });
+                  }}
+                >
+                  Pedir otra aprobación
+                </Button>
+              )}
+              </div>
             </div>
           </div>
         </div>
