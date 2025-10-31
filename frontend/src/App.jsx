@@ -19,7 +19,11 @@ import Navigation from "./components/Navigation";
 import MetodologoView from "./screens/metodologo-view.jsx";
 import Revisor1View from "./screens/revisor1-view.jsx";
 import Revisor2View from "./screens/revisor2-view.jsx";
-import Asesor from "./screens/asesor-view.jsx";
+//import Asesor from "./screens/asesor-view.jsx";
+//Agregados RegistroProyecto
+import TesistaView from "./screens/registro-proyectoTESISTA.jsx";
+import Asesor from "./screens/registro-proyectoAsesor.jsx";
+//------
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
 import DriveViewer from "./screens/DriveViewer";
 
