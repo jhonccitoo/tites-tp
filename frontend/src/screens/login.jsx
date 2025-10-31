@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Login = () => {
   const [formValidated, setFormValidated] = useState(false);
@@ -12,6 +12,9 @@ const Login = () => {
 
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  // Mensaje de éxito si se acaba de registrar
+  const userRegistered = location.state?.userRegistered;
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
@@ -53,35 +56,28 @@ const Login = () => {
 
         if (response.data.token && response.data.user) {
           localStorage.setItem("authToken", response.data.token);
-
-          // Obtén el rol del usuario
-          const userRole = response.data.user.username;
-
-          // (Opcional) Guarda el rol si lo necesitas en otras partes de la app
+          const userRole = response.data.user.rol;
           localStorage.setItem("userRole", userRole);
-
           // --- LÓGICA DE REDIRECCIÓN ---
           console.log(`Usuario logueado con rol: ${userRole}`); // Depuración
           if (userRole === "TESISTA") {
-            navigate("/TesistaView"); // Redirige tesista
+            navigate("/TesistaView");
           } else if (userRole === "admin") {
-            navigate("/user"); // Redirige admin
+            navigate("/user");
           } else if (userRole === "asesor") {
-            navigate("/asesor"); // O redirige a notas por ahora
-          } else if (userRole === "tesista") {
-            navigate("/TesistaView"); // Redirige tesista
+            navigate("/asesor");
           } else if (userRole === "revisor1") {
-            navigate("/revisor1"); // Redirige admin
+            navigate("/revisor1");
           } else if (userRole === "revisor2") {
-            navigate("/revisor2"); // O redirige a notas por ahora
+            navigate("/revisor2");
           } else if (userRole === "coordinador academico") {
-            navigate("/TesistaView"); // Redirige admin
+            navigate("/TesistaView");
           } else if (userRole === "coordinador general") {
-            navigate("/coordinadorgeneral"); // O redirige a notas por ahora
+            navigate("/coordinadorgeneral");
           } else if (userRole === "secretaria") {
             navigate("/secretaria");
           } else if (userRole === "metodologo") {
-            navigate("/MetodologoView"); // Redirige admin
+            navigate("/MetodologoView");
           } else {
             console.warn("Rol de usuario no reconocido, redirigiendo a /notas");
             navigate("/notas");
@@ -250,6 +246,9 @@ const Login = () => {
       <style dangerouslySetInnerHTML={{ __html: style }} />
       <main className="login-card" role="main">
         <h1 className="login-title">TITES - URP</h1>
+        {userRegistered && (
+          <div className="alert alert-success text-center mb-3">Usuario registrado exitosamente</div>
+        )}
         <form
           className={formValidated ? "was-validated" : ""}
           noValidate

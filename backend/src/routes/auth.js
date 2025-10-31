@@ -12,8 +12,8 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        // 1. Buscar al usuario por username
-        const user = await User.findOne({ username: username });
+        // Buscar por 'usuario' (correo institucional)
+        const user = await User.findOne({ usuario: username });
         if (!user) {
             // ¡Importante! No digas "Usuario no encontrado". Usa un mensaje genérico.
             return res.status(401).json({ message: 'Invalid credentials.' });
@@ -49,7 +49,8 @@ router.post('/login', async (req, res) => {
             token: token,
             user: { // Devuelve datos seguros del usuario si el frontend los necesita
                 id: user._id,
-                username: user.username,
+                username: user.usuario,
+                rol: user.rol
             }
         });
 

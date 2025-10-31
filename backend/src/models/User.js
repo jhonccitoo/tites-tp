@@ -4,30 +4,41 @@ const bcrypt = require('bcryptjs');
 const { Schema } = mongoose;
 
 const userSchema = new Schema({
-    username: {
+    nombre: {
         type: String,
         required: true,
-        unique: true, // Asegura que los nombres de usuario sean únicos
+        trim: true
+    },
+    apellido: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    correoInstitucional: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true
+    },
+    usuario: {
+        type: String,
+        required: true,
+        unique: true,
         trim: true
     },
     password: {
         type: String,
         required: true
     },
-    role: {
-        type: String,
-        enum: ["usuario", "admin", "coordinador", "secretaria"], // posibles roles
-        default: "usuario"
+    pagoInscripcion: {
+        type: Boolean,
+        required: true,
+        default: false
     },
-    // Otros campos opcionales:
-    email: {
+    rol: {
         type: String,
-        trim: true
+        default: ""
     },
-    telefono: {
-        type: String,
-        trim: true
-    }
 }, {
     timestamps: true
 });

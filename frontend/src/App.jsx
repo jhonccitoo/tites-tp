@@ -10,6 +10,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
 
 import Noteslist from "./components/NotesList.jsx";
+import RegistrarUsuarioView from "./screens/registrar-usuario.jsx";
 import CreateNote from "./components/CreateNote";
 import CreateUser from "./components/CreateUser";
 import TesistaView from "./screens/tesista-view.jsx";
