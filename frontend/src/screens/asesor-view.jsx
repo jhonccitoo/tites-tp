@@ -33,12 +33,13 @@ const fileIcon = (
 
 // Componente funcional con Hooks
 export default function AsesorView() {
-  
   // --- Estados para manejar la UI y los datos ---
   const [usuario] = useState({ rol: localStorage.getItem("userRole") });
   const [files, setFiles] = useState([]);
   const [grupos, setGrupos] = useState([]);
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
+  // Nuevo estado para el filtro
+  const [filterActive, setFilterActive] = useState(false);
 
   // Estado para alertas y mensajes al usuario
   const [alertMsg, setAlertMsg] = useState("");
@@ -64,14 +65,14 @@ export default function AsesorView() {
       });
   }, [asesorId]);
 
-  // Obtener los archivos cada vez que se selecciona un grupo nuevo
+  // Obtener los archivos cada vez que se selecciona un grupo nuevo o el filtro cambia
   useEffect(() => {
     if (grupoSeleccionado && token) {
       getFiles();
     } else {
       setFiles([]); // Limpia los archivos si no hay grupo seleccionado
     }
-  }, [grupoSeleccionado, token]);
+  }, [grupoSeleccionado, token, filterActive]);
 
   // Función para obtener los archivos del grupo desde el backend
   const getFiles = async () => {
@@ -82,28 +83,70 @@ export default function AsesorView() {
         `http://localhost:4000/api/drive/files?folderId=${grupoSeleccionado.carpeta_grupo_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setFiles(res.data);
+
+      // Lógica de filtrado de archivos
+      if (filterActive) {
+        const filteredFiles = res.data.filter((file) =>
+          file.name.includes("F.TITES 008 Form")
+        );
+        setFiles(filteredFiles);
+        if (filteredFiles.length === 0) {
+          setAlertMsg(
+            "El formulario F.TITES 008 no se encuentra en este grupo."
+          );
+        }
+      } else {
+        setFiles(res.data);
+      }
     } catch (err) {
       console.error("Error obteniendo archivos:", err.response || err.message);
       setAlertMsg("Error al obtener los archivos del grupo.");
     }
   };
 
-  // Maneja el cambio en el selector de grupos
+  // Función para abrir archivos en una nueva pestaña
+  const handleOpenFile = (fileId) => {
+    const url = `https://drive.google.com/file/d/${fileId}/view`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  // --- NUEVA FUNCIÓN PARA VALIDAR Y FIRMAR EL REPORTE ---
+  const handleValidateReport = () => {
+    if (grupoSeleccionado) {
+      // Activa el filtro para mostrar solo el formulario F.TITES 008
+      setFilterActive(true);
+      setAlertMsg(
+        `Mostrando solo el formulario F.TITES 008 para el grupo: ${grupoSeleccionado.grupo}`
+      );
+    } else {
+      alert("Por favor, selecciona un grupo antes de validar el reporte.");
+    }
+  };
+
+  // --- Maneja el cambio en el selector de grupos ---
   const handleGrupoChange = (e) => {
     const selectedIndex = e.target.value;
     if (selectedIndex === "") {
       setGrupoSeleccionado(null);
+      setFilterActive(false); // Desactiva el filtro si no hay grupo seleccionado
     } else {
       setGrupoSeleccionado(grupos[selectedIndex]);
+      setFilterActive(false); // Desactiva el filtro al seleccionar un nuevo grupo
     }
   };
 
-  // Función para abrir archivos en una nueva pestaña
-  const handleOpenFile = (fileId) => {
-    // Puedes construir la URL como necesites. Esta es una URL genérica de previsualización.
-    const url = `https://drive.google.com/file/d/${fileId}/view`;
-    window.open(url, "_blank", "noopener,noreferrer");
+  // --- Maneja el cambio en el selector de procesos ---
+  const handleProcesosChange = (e) => {
+    const selectedValue = e.target.value;
+    if (selectedValue === "validate_report") {
+      handleValidateReport();
+    } else {
+      // Aquí puedes agregar la lógica para los otros procesos
+      setFilterActive(false);
+      setAlertMsg(`Se ha seleccionado el proceso: ${selectedValue}`);
+    }
+    // Opcionalmente, puedes restablecer el selector
+    e.target.value = "";
   };
 
   return (
@@ -135,7 +178,6 @@ export default function AsesorView() {
           </div>
 
           <div className="d-grid gap-2">
-            {/* Puedes dejar esto o quitarlo, ya que la selección principal estará bloqueada */}
             <Button variant="outline-light">Mis Datos Personales</Button>
             <Button variant="outline-light">Formularios</Button>
             <Button variant="outline-light">Tesis</Button>
@@ -153,10 +195,30 @@ export default function AsesorView() {
         <Col md={9} className="p-4">
           {/* Fila de Controles Superiores */}
           <Row className="mb-4 align-items-center">
-            <Col md={8}>
+            <Col md={6}>
               <h3>Archivos de Grupos Asignados</h3>
             </Col>
-            <Col md={4} className="d-flex justify-content-end">
+            {/* Nuevo selector de Procesos */}
+            <Col md={3}>
+              <Form.Select
+                size="sm"
+                onChange={handleProcesosChange}
+                style={{ maxWidth: "250px" }}
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  -- Procesos --
+                </option>
+                <option value="Corregir proyecto de tesis">
+                  Corregir proyecto de tesis
+                </option>
+                <option value="Asesorar tesis">Asesorar tesis</option>
+                <option value="validate_report">
+                  Validar y Firmar Reporte de Avance Semanal
+                </option>
+              </Form.Select>
+            </Col>
+            <Col md={3} className="d-flex justify-content-end">
               {/* Selector de Grupos */}
               <Form.Select
                 size="sm"
@@ -199,7 +261,6 @@ export default function AsesorView() {
                             </div>
                           </div>
                           <div className="d-flex gap-2">
-                            {/* Puedes añadir botones para calificar aquí */}
                             <Button variant="secondary" size="sm">
                               Calificar
                             </Button>
@@ -218,8 +279,9 @@ export default function AsesorView() {
                 ))
               ) : (
                 <p>
-                  El grupo <strong>{grupoSeleccionado.grupo}</strong> no tiene
-                  archivos actualmente.
+                  {filterActive
+                    ? `El formulario F.TITES 008 no se encuentra en este grupo.`
+                    : `El grupo ${grupoSeleccionado.grupo} no tiene archivos actualmente.`}
                 </p>
               )
             ) : (
