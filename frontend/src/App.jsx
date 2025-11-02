@@ -29,6 +29,8 @@ import Asesor from "./screens/registro-proyectoAsesor.jsx";
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";
 import DriveViewer from "./screens/DriveViewer";
 import CoordinadorAcademicoView from "./screens/coordinadorAcademico.jsx";
+import TesistaView from './screens/tesista-view';
+
 
 // Componente para rutas protegidas
 const ProtectedRoute = () => {
