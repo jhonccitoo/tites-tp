@@ -137,7 +137,106 @@ export default function TesistaView() {
   // --- NUEVOS ESTADOS PARA EL MODAL DE ESTADO ---
   const [showEstadoModal, setShowEstadoModal] = useState(false);
   const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+  // 🔹 FUNCIÓN PARA MOSTRAR DESCRIPCIONES SEGÚN EL FORMULARIO
+  const obtenerDescripcionParaFile = (fileName) => {
+    const name = fileName.toUpperCase().trim(); 
 
+    switch (true) {
+    case name.includes("F.TITES 003"):
+      return (
+        <div>
+          <p><strong>📘 Descripción Concisa</strong></p>
+          <ul style={{ marginLeft: "1.5rem" }}>
+            <li>
+              <strong>Propósito:</strong> Este documento tiene como finalidad la presentación oficial del título del Proyecto de Tesis y la formalización de los roles de investigación.
+            </li>
+            <li>
+              <strong>Acción del Tesista:</strong> El tesista debe consignar el título definitivo del proyecto y registrar el nombre completo y la firma de todos los participantes, incluyendo la gestión de las firmas del Metodólogo y del Asesor.
+            </li>
+            <li>
+              <strong>Requisito Clave:</strong> Es obligatorio obtener la aprobación y firma del Metodólogo y del Asesor para validar la estructura del grupo de investigación y el compromiso con el proyecto.
+            </li>
+          </ul>
+        </div>
+      );
+
+      case name.includes("F.TITES 004"):
+        return (
+          <div>
+            <p><strong>📘 Descripción Concisa</strong></p>
+            <ul style={{ marginLeft: "1.5rem" }}>
+              <li>
+                <strong>Propósito:</strong> Este formulario tiene como fin detallar, justificar y evaluar la viabilidad de la Propuesta del Tema de Tesis ante la Escuela de Ingeniería.
+              </li>
+              <li>
+                <strong>Acción del Tesista:</strong> El tesista debe completar los campos clave de la investigación, incluyendo:
+                <ul style={{ marginLeft: "1.5rem", listStyleType: "circle" }}>
+                  <li>Nombre del Tema (Título).</li>
+                  <li>Identificación de la Empresa/Entidad de aplicación, si corresponde.</li>
+                  <li>Descripción sintética de la Problemática a abordar.</li>
+                  <li>Formulación clara del Objetivo principal del proyecto.</li>
+                  <li>Evaluación de la Disponibilidad de Información para la ejecución.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Requisito Clave:</strong> El documento debe incluir las opiniones y firmas obligatorias del Metodólogo y del Asesor sobre la Viabilidad del Proyecto, ratificando su aprobación técnica y metodológica.
+              </li>
+            </ul>
+          </div>
+        );
+      case name.includes("F.TITES 005"):
+          return (
+            <div>
+              <p><strong>📘 Descripción Concisa</strong></p>
+              <ul style={{ marginLeft: "1.5rem" }}>
+                <li>
+                  <strong>Propósito:</strong> Este formulario se emplea para oficializar el registro final del Proyecto de Tesis y certificar su estado de avance ante la Escuela de Ingeniería, marcando la culminación o el progreso avanzado del trabajo.
+                </li>
+                <li>
+                  <strong>Acción del Tesista:</strong> El tesista debe consignar todos los datos formales del proyecto ya aprobado, incluyendo:
+                  <ul style={{ marginLeft: "1.5rem", listStyleType: "circle" }}>
+                    <li>Participantes.</li>
+                    <li>Título definitivo.</li>
+                    <li>Metodólogo y Asesor.</li>
+                    <li>Estado del Proyecto de Tesis (Terminado o En Proceso).</li>
+                    <li>Justificación del estado y fecha estimada de término (si aplica).</li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Requisito Clave:</strong> Es crucial adjuntar y registrar los datos del control de plagio, incluyendo si el proyecto cuenta con el Informe Turnitin y el Porcentaje final de similitud obtenido, lo cual es fundamental para el proceso de sustentación.
+                </li>
+              </ul>
+            </div>
+          );
+      case name.includes("F.TITES 006"):
+          return (
+            <div>
+              <p><strong>📘 Descripción Concisa</strong></p>
+              <ul style={{ marginLeft: "1.5rem" }}>
+                <li>
+                  <strong>Propósito:</strong> Este documento opera como un índice de contenidos obligatorio y detallado que establece la estructura formal para la redacción del Proyecto o Plan de Tesis.
+                </li>
+                <li>
+                  <strong>Acción del Tesista:</strong> El tesista debe utilizar este esquema como referencia estricta para organizar y desarrollar el contenido de su documento de investigación, asegurando que se incluyan todos los capítulos y subpuntos requeridos por la Escuela de Ingeniería.
+                </li>
+                <li>
+                  <strong>Requisito Clave:</strong> El plan de tesis debe contener obligatoriamente los cuatro grandes bloques temáticos definidos:
+                  <ul style={{ marginLeft: "1.5rem", listStyleType: "circle" }}>
+                    <li>Planteamiento y Delimitación del Problema.</li>
+                    <li>Marco Teórico.</li>
+                    <li>Metodología del Estudio.</li>
+                    <li>Aspectos Administrativos.</li>
+                  </ul>
+                  Además, debe incluir los elementos <strong>preliminares</strong> (Carátula, Índices) y <strong>finales</strong> (Referencias y Anexos).
+                </li>
+              </ul>
+            </div>
+          );
+
+      default:
+        return "";
+    }
+  };
   return (
     <Container fluid>
       <Row>
@@ -178,21 +277,26 @@ export default function TesistaView() {
             </Col>
             <Col className="d-flex justify-content-end gap-2">
               {/* --- NUEVO SELECTOR SOLO PARA TESTEAR PROYECTO --- */}
+              {/* --- SELECTOR --- */}
               <Form.Select
-                size="sm"
-                value={filtroProceso}
-                onChange={(e) => setFiltroProceso(e.target.value)}
-                style={{ width: "250px", display: "inline-block" }}
+                  size="sm"
+                  value={filtroProceso}
+                  onChange={(e) => setFiltroProceso(e.target.value)}
+                  style={{ width: "250px", display: "inline-block" }}
               >
                 <option value="">-- Selecciona una opción --</option>
-                <option value="">Registrar Proyecto de Tesis</option>
+                <option value="F.TITES 003,F.TITES 004,F.TITES 005,F.TITES 006">
+                  Registrar Proyecto de Tesis
+                </option>
                 <option value="F.TITES 006">Testear Proyecto en Turnitin</option>
                 <option value="">Asesoría Semanal</option>
                 <option value="">Solicitar Revisión Final</option>
                 <option value="">Revisión Final</option>
                 <option value="">Cambiar Tesis</option>
-
               </Form.Select>
+
+
+
 
               {/* Botón para Duplicar Formularios, ahora siempre actúa sobre el grupo fijo */}
               <Button variant="outline-warning" size="sm" onClick={confirmDuplicarFormularios} disabled={files.length > 0} >
@@ -212,41 +316,77 @@ export default function TesistaView() {
           <div className="row">
             {files.length > 0 ? (
               files
-              .filter(file => {
-                if (!file.name.includes("F.TITES")) return false;
-                if (filtroProceso) {
-                  return file.name.includes(filtroProceso);
-                }
-                return true; // mostrar todos si no hay filtro
-              })
+                .filter(file => {
+                  if (!file.name.includes("F.TITES")) return false;
+                  if (filtroProceso) {
+                    const codigos = filtroProceso.split(",").map(c => c.trim());
+                    return codigos.some(codigo => file.name.includes(codigo));
+                  }
+                  return true;
+                })
+                // 🔹 ORDENAR POR NÚMERO DEL FORMULARIO (003, 004, 005, 006)
+                .sort((a, b) => {
+                  const numA = parseInt(a.name.match(/\d+/)?.[0] || 0);
+                  const numB = parseInt(b.name.match(/\d+/)?.[0] || 0);
+                  return numA - numB;
+                })
               .map((file) => (
                 <div className="col-md-12 p-2" key={file.id}>
                   <Card className="mb-3">
                     <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <div className="d-flex align-items-start" style={{ gap: "12px", width: "100%" }}>
                           {fileIcon}
-                          <div>
-                              <h5 className="mb-0">{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
-                              <small className="text-muted">{file.mimeType}</small>
+                          <div style={{ flex: 1 }}>
+                            <h5 className="mb-1">
+                              {file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}
+                            </h5>
+                            <small className="text-muted d-block mb-2">{file.mimeType}</small>
+
+                            {/* 🔸 Mostrar descripción solo si está seleccionado "Registrar Proyecto de Tesis" */}
+                            {filtroProceso === "F.TITES 003,F.TITES 004,F.TITES 005,F.TITES 006" &&
+                              obtenerDescripcionParaFile(file.name) && (
+                                <div className="p-2 rounded" style={{ backgroundColor: "#f8f9fa" }}>
+                                  <small
+                                  className="text-muted"
+                                  style={{ whiteSpace: "pre-line", display: "block" }}
+                                >
+                                  {obtenerDescripcionParaFile(file.name)}
+                                </small>
+                                </div>
+                              )}
                           </div>
                         </div>
-                        <div className="d-flex gap-2">
-                          <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
-                            Abrir
-                          </Button>
-                          <Button variant="outline-success" size="sm" onClick={() => {
+
+                          <div
+                        className="d-flex align-items-center gap-2 ms-3"
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          href={`https://docs.google.com/document/d/${file.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Abrir
+                        </Button>
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => {
                             setArchivoSeleccionado({
                               name: file.name,
                               estado: "Rechazado",
-                              comentarios: "Sin observaciones."
+                              comentarios: "Sin observaciones.",
                             });
                             setShowEstadoModal(true);
-                          }}>
-                            Ver Estado
-                          </Button>
-                        </div>
+                          }}
+                        >
+                          Ver Estado
+                        </Button>
                       </div>
+                        </div>
                     </Card.Body>
                   </Card>
                 </div>
