@@ -2,63 +2,53 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Container, Row, Col, Button, Card, Form } from "react-bootstrap";
 import { Link } from "react-router-dom";
-
-// Puedes mantener tus imágenes si las necesitas
 import logoUniversidad from "../assets/logo-urp1.png";
 import asesor from "../assets/asesor.webp";
 
 // Icono para representar un archivo genérico
 const fileIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-file-earmark-text me-2" viewBox="0 0 16 16">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+    className="bi bi-file-earmark-text me-2" viewBox="0 0 16 16">
     <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
-    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2
+      A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1
+      1-1h5.5z"/>
   </svg>
 );
 
-// El componente ahora es funcional y usa Hooks (useState, useEffect)
 export default function TesistaView() {
-  
-  // --- CAMBIO 1: Creamos un objeto fijo para el grupo del tesista y eliminamos el estado 'grupos' ---
+
+  // --- Grupo fijo de este tesista ---
   const grupoFijoParaTesista = {
-      _id: 'grupo_tesista_fijo', // ID de placeholder
-      grupo: 'Grupo 1',
-      // Este es el ID de la carpeta de Drive que especificaste
-      carpeta_grupo_id: '1vKQOc4cWIV4yEvNYoCiaGyl_XvKbjw_q' 
+    _id: 'grupo_tesista_fijo',
+    grupo: 'Grupo 1',
+    carpeta_grupo_id: '1vKQOc4cWIV4yEvNYoCiaGyl_XvKbjw_q'
   };
-  
-  // --- Estados del componente ---
+
   const [usuario] = useState({ rol: localStorage.getItem("userRole") });
   const [files, setFiles] = useState([]);
-  // El grupo seleccionado ahora es siempre nuestro objeto fijo
   const [grupoSeleccionado] = useState(grupoFijoParaTesista);
-
-  // --- NUEVO ESTADO PARA FILTRO ---
-  const [filtroProceso, setFiltroProceso] = useState(""); 
-
-  // Estados para la lógica de duplicado
+  const [filtroProceso, setFiltroProceso] = useState("");
   const [formularios, setFormularios] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  
-  // Estado para alertas y mensajes al usuario
   const [alertMsg, setAlertMsg] = useState("");
+  const [showEstadoModal, setShowEstadoModal] = useState(false);
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
 
   const token = localStorage.getItem("googleToken");
 
-  // --- CAMBIO 2: El useEffect ahora solo depende del token para cargar los archivos del grupo fijo ---
   useEffect(() => {
     if (token) {
       getFiles();
     } else {
-        setAlertMsg("Inicia sesión con Google para ver tus archivos.");
+      setAlertMsg("Inicia sesión con Google para ver tus archivos.");
     }
-  }, [token]); // Se ejecuta solo cuando el token cambie
+  }, [token]);
 
-  // Función para obtener los archivos del grupo
   const getFiles = async () => {
-    // La función ahora usa directamente el 'grupoSeleccionado' que es nuestro objeto fijo
-    if (!grupoSeleccionado || !token) return; 
+    if (!grupoSeleccionado || !token) return;
     try {
       const res = await axios.get(
         `http://localhost:4000/api/drive/files?folderId=${grupoSeleccionado.carpeta_grupo_id}`,
@@ -71,7 +61,6 @@ export default function TesistaView() {
     }
   };
 
-  // Función para obtener la lista de formularios base (sin cambios)
   const getFormularios = async () => {
     if (!token) {
       setAlertMsg("No tienes token válido. Inicia sesión.");
@@ -89,18 +78,16 @@ export default function TesistaView() {
       return [];
     }
   };
-  
-  // Abre el modal de confirmación después de cargar los formularios (sin cambios)
+
   const confirmDuplicarFormularios = async () => {
     const formulariosObtenidos = await getFormularios();
     if (formulariosObtenidos.length > 0) {
-        setShowModal(true);
+      setShowModal(true);
     } else {
-        setAlertMsg("No se encontraron formularios para duplicar o hubo un error al cargarlos.");
+      setAlertMsg("No se encontraron formularios para duplicar o hubo un error al cargarlos.");
     }
   };
 
-  // Maneja la duplicación una vez confirmada en el modal (sin cambios)
   const handleDuplicarConfirmado = async () => {
     if (!token || formularios.length === 0) {
       setAlertMsg("Token no disponible o no hay formularios para duplicar.");
@@ -132,31 +119,27 @@ export default function TesistaView() {
     }
   };
 
-  // --- CAMBIO 3: La función handleGrupoChange ya no es necesaria y se puede eliminar ---
-
-  // --- NUEVOS ESTADOS PARA EL MODAL DE ESTADO ---
-  const [showEstadoModal, setShowEstadoModal] = useState(false);
-  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+  // Placeholder para enviar formulario (puedes conectar tu backend aquí)
+  const handleEnviarFormulario = (file) => {
+    alert(`Formulario "${file.name}" enviado correctamente.`);
+  };
 
   return (
     <Container fluid>
       <Row>
-        {/* --- Sidebar (sin cambios de lógica) --- */}
-        <Col
-          style={{ width: "830px" }}
-          className="bg-success text-white min-vh-100 p-3"
-        >
+        {/* Sidebar */}
+        <Col style={{ width: "830px" }} className="bg-success text-white min-vh-100 p-3">
           <div className="text-center mb-4">
             <img src={logoUniversidad} className="img-fluid mb-2" alt="Logo Universidad" style={{ maxWidth: "150px" }}/>
-            <h4 className="fw-bold"> TITES </h4>
-            <img src={asesor} className="img-fluid mb-2" alt="Foto Asesor" style={{ maxWidth: "150px", borderRadius: "50%", marginTop: 35 }}/>
+            <h4 className="fw-bold">TITES</h4>
+            <img src={asesor} className="img-fluid mb-2" alt="Foto Asesor"
+              style={{ maxWidth: "150px", borderRadius: "50%", marginTop: 35 }}/>
             <div className="mt-5">
               <h5>{usuario?.rol || "Rol"}</h5>
-              <small>{usuario?.rol ? "USUARIO:" + usuario.rol : "Rol"}</small>
+              <small>{usuario?.rol ? "USUARIO: " + usuario.rol : "Rol"}</small>
             </div>
           </div>
           <div className="d-grid gap-2">
-            {/* Puedes dejar esto o quitarlo, ya que la selección principal estará bloqueada */}
             <Button variant="outline-light">Mis Datos Personales</Button>
             <Button variant="outline-light">Formularios</Button>
             <Button variant="outline-light">Tesis</Button>
@@ -167,17 +150,13 @@ export default function TesistaView() {
           </div>
         </Col>
 
-        {/* --- Área de Contenido Principal (Refactorizada) --- */}
+        {/* Contenido principal */}
         <Col md={9} className="p-4">
-          
-          {/* Fila de Controles Superiores */}
           <Row className="mb-4 align-items-center">
             <Col>
-              {/* --- CAMBIO 4: Reemplazamos el selector por un título fijo --- */}
               <h3>Archivos de tu Grupo: <strong>{grupoSeleccionado.grupo}</strong></h3>
             </Col>
             <Col className="d-flex justify-content-end gap-2">
-              {/* --- NUEVO SELECTOR SOLO PARA TESTEAR PROYECTO --- */}
               <Form.Select
                 size="sm"
                 value={filtroProceso}
@@ -187,15 +166,14 @@ export default function TesistaView() {
                 <option value="">-- Selecciona una opción --</option>
                 <option value="">Registrar Proyecto de Tesis</option>
                 <option value="F.TITES 006">Testear Proyecto en Turnitin</option>
-                <option value="">Asesoría Semanal</option>
+                <option value="asesoria">Asesoría Semanal</option>
                 <option value="">Solicitar Revisión Final</option>
                 <option value="">Revisión Final</option>
                 <option value="">Cambiar Tesis</option>
-
               </Form.Select>
 
-              {/* Botón para Duplicar Formularios, ahora siempre actúa sobre el grupo fijo */}
-              <Button variant="outline-warning" size="sm" onClick={confirmDuplicarFormularios} disabled={files.length > 0} >
+              <Button variant="outline-warning" size="sm"
+                onClick={confirmDuplicarFormularios} disabled={files.length > 0}>
                 Cargar Formularios a mi Grupo
               </Button>
             </Col>
@@ -206,51 +184,65 @@ export default function TesistaView() {
               {alertMsg}
               <button type="button" className="btn-close" onClick={() => setAlertMsg("")}></button>
             </div>
-           )}
+          )}
 
-          {/* Listado de Archivos con diseño de tarjetas */}
           <div className="row">
             {files.length > 0 ? (
               files
-              .filter(file => {
-                if (!file.name.includes("F.TITES")) return false;
-                if (filtroProceso) {
-                  return file.name.includes(filtroProceso);
-                }
-                return true; // mostrar todos si no hay filtro
-              })
-              .map((file) => (
-                <div className="col-md-12 p-2" key={file.id}>
-                  <Card className="mb-3">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
-                          {fileIcon}
-                          <div>
+                .filter(file => {
+                  const nombre = file.name.toUpperCase().trim().replace(/^COPIA DE /, "");
+                  if (!nombre.includes("F.TITES")) return false;
+
+                  if (filtroProceso === "asesoria") {
+                    return nombre.includes("F.TITES 006") || nombre.includes("F.TITES 008");
+                  }
+
+                  if (filtroProceso) {
+                    return nombre.includes(filtroProceso.toUpperCase());
+                  }
+
+                  return true;
+                })
+                .map((file) => (
+                  <div className="col-md-12 p-2" key={file.id}>
+                    <Card className="mb-3">
+                      <Card.Body>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center">
+                            {fileIcon}
+                            <div>
                               <h5 className="mb-0">{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
                               <small className="text-muted">{file.mimeType}</small>
+                            </div>
+                          </div>
+                          <div className="d-flex gap-2">
+                            {file.name.toUpperCase().includes("F.TITES 008") && (
+                              <Button variant="outline-success" size="sm"
+                                onClick={() => handleEnviarFormulario(file)}>
+                                Enviar Formulario Semanal
+                              </Button>
+                            )}
+                            <Button variant="outline-primary" size="sm"
+                              href={`https://docs.google.com/document/d/${file.id}`} target="_blank">
+                              Abrir
+                            </Button>
+                            <Button variant="outline-success" size="sm"
+                              onClick={() => {
+                                setArchivoSeleccionado({
+                                  name: file.name,
+                                  estado: "Rechazado",
+                                  comentarios: "Sin observaciones."
+                                });
+                                setShowEstadoModal(true);
+                              }}>
+                              Ver Estado
+                            </Button>
                           </div>
                         </div>
-                        <div className="d-flex gap-2">
-                          <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
-                            Abrir
-                          </Button>
-                          <Button variant="outline-success" size="sm" onClick={() => {
-                            setArchivoSeleccionado({
-                              name: file.name,
-                              estado: "Rechazado",
-                              comentarios: "Sin observaciones."
-                            });
-                            setShowEstadoModal(true);
-                          }}>
-                            Ver Estado
-                          </Button>
-                        </div>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </div>
-              ))
+                      </Card.Body>
+                    </Card>
+                  </div>
+                ))
             ) : (
               <p>No se encontraron archivos en tu grupo. Puedes cargar los formularios base con el botón de arriba.</p>
             )}
@@ -258,9 +250,10 @@ export default function TesistaView() {
         </Col>
       </Row>
 
-      {/* --- Modal de Confirmación para Duplicar (sin cambios) --- */}
+      {/* Modal de Confirmación para duplicar */}
       {showModal && (
-        <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div className="modal show fade d-block" tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
@@ -277,7 +270,8 @@ export default function TesistaView() {
                   </div>
                 ) : (
                   <p>
-                    ¿Estás seguro de que deseas cargar <strong>todos los formularios base</strong> a la carpeta de tu grupo <strong>{grupoSeleccionado?.grupo}</strong>?
+                    ¿Estás seguro de que deseas cargar <strong>todos los formularios base</strong> 
+                    a la carpeta de tu grupo <strong>{grupoSeleccionado?.grupo}</strong>?
                   </p>
                 )}
               </div>
@@ -292,9 +286,10 @@ export default function TesistaView() {
         </div>
       )}
 
-      {/* --- Modal Estado y Correcciones --- */}
+      {/* Modal Estado */}
       {showEstadoModal && archivoSeleccionado && (
-        <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div className="modal show fade d-block" tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
@@ -303,7 +298,7 @@ export default function TesistaView() {
               </div>
               <div className="modal-body">
                 <p><strong>Archivo:</strong> {archivoSeleccionado.name}</p>
-                <p><strong>Estado:</strong> 
+                <p><strong>Estado:</strong>{" "}
                   <span className={
                     archivoSeleccionado.estado === "Aprobado" ? "text-success fw-bold" :
                     archivoSeleccionado.estado === "Rechazado" ? "text-danger fw-bold" :
@@ -319,32 +314,35 @@ export default function TesistaView() {
               </div>
               <div className="modal-footer">
                 <Button variant="secondary" onClick={() => setShowEstadoModal(false)}>Cerrar</Button>
-                {archivoSeleccionado.estado === "Rechazado" && ( // En caso de Rechazo se pide otra revision
-                <Button variant="primary" onClick={() => {setArchivoSeleccionado({
+                {archivoSeleccionado.estado === "Rechazado" && (
+                  <Button variant="primary" onClick={() => {
+                    setArchivoSeleccionado({
                       ...archivoSeleccionado,
                       estado: "Pendiente",
                       comentarios: "Se ha solicitado una nueva revisión.",
                     });
-                  }}
-                >
-                  Pedir otra aprobación
-                </Button>
-              )}
+                  }}>
+                    Pedir otra aprobación
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* --- Toast de Notificación (sin cambios) --- */}
+      {/* Toast */}
       {showToast && (
         <div className="toast-container position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1055 }}>
           <div className="toast show bg-success text-white">
             <div className="toast-header">
               <strong className="me-auto">Carga completa</strong>
-              <button type="button" className="btn-close btn-close-white" onClick={() => setShowToast(false)}></button>
+              <button type="button" className="btn-close btn-close-white"
+                onClick={() => setShowToast(false)}></button>
             </div>
-            <div className="toast-body">Los formularios se cargaron correctamente en la carpeta de tu grupo.</div>
+            <div className="toast-body">
+              Los formularios se cargaron correctamente en la carpeta de tu grupo.
+            </div>
           </div>
         </div>
       )}
