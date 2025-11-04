@@ -59,7 +59,6 @@ function App() {
           <Route path="/edit/:id" element={<CreateNote />} />
           <Route path="/create" element={<CreateNote />} />
           <Route path="/user" element={<CreateUser />} />
-          <Route path="/TesistaView" element={<TesistaView />} />
           <Route path="/MetodologoView" element={<MetodologoView />} />
           <Route path="/asesor" element={<Asesor />} />
           <Route path="/coordinadorGeneral" element={<CoordinadorGeneralView />} />

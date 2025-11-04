@@ -190,7 +190,7 @@ function CoordinadorAcademicoView() {
             src="/src/assets/logo-urp.png"
             alt="URP"
             className="mb-3"
-            style={{ width: "70px", height: "70px" }}
+            style={{ width: "150px", height: "50px" }}
           />
           <h5 className="fw-bold mb-2">TITES</h5>
           <div className="text-center mb-4">
