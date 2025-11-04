@@ -179,78 +179,8 @@ router.get('/asesor/:id', async (req, res) => {
     res.status(500).json({ error: 'No se pudieron obtener las carpetas' });
   }
 });
-// List only files that START WITH "F.TITES 007" in a folder
-router.get('/coordinadoracademico/tesis007', authenticate, async (req, res) => {
-  try {
-    const targetFolder = req.query.folderId || process.env.DEFAULT_DRIVE_FOLDER_ID;
-    if (!targetFolder) return res.status(400).json({ error: 'Falta folderId (o DEFAULT_DRIVE_FOLDER_ID)' });
 
-    const { data } = await req.drive.files.list({
-      q: `'${targetFolder}' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder' and name contains 'F.TITES 007'`,
-      fields: 'files(id,name,mimeType,modifiedTime,webViewLink)',
-      orderBy: 'modifiedTime desc',
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-      pageSize: 1000,
-    });
-
-    const norm = s => (s||'').toUpperCase().replace(/\s+/g,' ').trim();
-    const archivos = (data.files || []).filter(f => norm(f.name).startsWith('F.TITES 007'));
-
-    res.json({ count: archivos.length, archivos });
-  } catch (err) {
-    console.error('F.TITES 007 list error:', err.message);
-    res.status(500).json({ error: 'No se pudo listar F.TITES 007' });
-  }
-});
-router.get('/coordinadoracademico/tesis007/:fileId/download', authenticate, async (req, res) => {
-  try {
-    const { fileId } = req.params;
-    const meta = await req.drive.files.get({
-      fileId,
-      fields: 'name,mimeType',
-      supportsAllDrives: true,
-    });
-
-    res.setHeader('Content-Disposition', `attachment; filename="${meta.data.name}"`);
-    res.setHeader('Content-Type', meta.data.mimeType || 'application/pdf');
-
-    const dl = await req.drive.files.get(
-      { fileId, alt: 'media', supportsAllDrives: true },
-      { responseType: 'stream' }
-    );
-
-    dl.data.on('error', e => {
-      console.error('download error:', e.message);
-      res.status(500).end();
-    }).pipe(res);
-  } catch (err) {
-    console.error('download error:', err.message);
-    res.status(500).json({ error: 'No se pudo descargar' });
-  }
-});
-
-router.get('/coordinador-academico/debug-children', authenticate, async (req, res) => {
-  try {
-    const folderId = req.query.folderId || process.env.DRIVE_ROOT_STUDENTS_FOLDER_ID || process.env.DEFAULT_DRIVE_FOLDER_ID;
-    if (!folderId) return res.status(400).json({ error: 'Provide ?folderId or set DRIVE_ROOT_STUDENTS_FOLDER_ID' });
-
-    const { data } = await req.drive.files.list({
-      q: `'${folderId}' in parents and trashed=false`,
-      fields: 'files(id,name,mimeType)',
-      orderBy: 'name',
-      includeItemsFromAllDrives: true,
-      supportsAllDrives: true,
-      pageSize: 1000,
-    });
-    res.json(data.files || []);
-  } catch (e) {
-    console.error('debug-children error:', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// GET /api/drive/coordinador-academico/tesis007/groups?rootId=<optional>&prefix=<optional>
+// get F.TITES 007 documents from all groups (for coordinador academico)
 router.get('/coordinador-academico/tesis007/groups', authenticate, async (req, res) => {
   try {
     const drive = req.drive;
@@ -298,34 +228,57 @@ router.get('/coordinador-academico/tesis007/groups', authenticate, async (req, r
     res.status(500).json({ error: 'Cannot list groups/files' });
   }
 });
-router.get('/oauth2callback', async (req, res) => {
-  const { code, error } = req.query;
-  if (error) return res.status(400).send(`<pre>Google OAuth error: ${error}</pre>`);
-  if (!code) return res.status(400).send('<pre>Missing ?code</pre>');
+// to get the document with user's access token
+function getDriveWithAccessToken(userAccessToken) {
+  const oauth2 = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+  );
+  oauth2.setCredentials({ access_token: userAccessToken });
+  return google.drive({ version: 'v3', auth: oauth2 });
+}
+// to permit the download/export of docx files
+const EXPORT_MAP = {
+  'application/vnd.google-apps.document': {
+    mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ext: '.docx',
+  },
+};
+// to download or export a selected file :)
+router.get('/coordinador-academico/tesis007/:fileId/download-docx', async (req, res) => {
   try {
-    const { tokens } = await oauth2Client.getToken(code);
-    res.set('Content-Type', 'text/html; charset=utf-8');
-    res.send(`
-<!doctype html><html><body>
-<script>
-  (function () {
-    const payload = {
-      ok: true,
-      source: 'tites-drive-oauth',
-      tokens: { access_token: ${JSON.stringify(tokens.access_token || '')} }
-    };
-    if (window.opener && payload.tokens.access_token) {
-      window.opener.postMessage(payload, window.location.origin.replace(':4000', ':5173'));
+    const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    if (!token) return res.status(401).json({ error: 'Missing bearer token' });
+
+    const drive = getDriveWithAccessToken(token);
+    const fileId = req.params.fileId;
+    const { data: meta } = await drive.files.get({
+      fileId,
+      fields: 'id,name,mimeType',
+      supportsAllDrives: true,
+    });
+
+    const baseName = `${meta.name}`.replace(/[\/\\]/g, '_');
+    const isGoogleType = String(meta.mimeType || '').startsWith('application/vnd.google-apps.');
+    const cfg = EXPORT_MAP[meta.mimeType];
+
+    if (isGoogleType) {
+      if (!cfg) {
+        return res.status(400).json({ error: `Cannot export this Google type: ${meta.mimeType}` });
+      }
+      const outName = baseName.toLowerCase().endsWith(cfg.ext) ? baseName : `${baseName}${cfg.ext}`;
+      res.setHeader('Content-Disposition', `attachment; filename="${outName}"`);
+      res.setHeader('Content-Type', cfg.mime);
+      const gRes = await drive.files.export({ fileId, mimeType: cfg.mime }, { responseType: 'stream' });
+      return gRes.data.on('error', () => !res.headersSent && res.status(500).end()).pipe(res);
     }
-    document.body.innerText = 'Google Drive connected. You can close this tab.';
-    setTimeout(() => window.close(), 800);
-  })();
-</script>
-</body></html>
-    `);
-  } catch (e) {
-    console.error('OAuth exchange error:', e);
-    res.status(500).send('<pre>Failed to exchange code for tokens.</pre>');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}"`);
+    const gRes = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+    return gRes.data.on('error', () => !res.headersSent && res.status(500).end()).pipe(res);
+  } catch (err) {
+    const status = err?.response?.status || 500;
+    res.status(status).json({ error: 'Download/export failed', details: err?.message });
   }
 });
 

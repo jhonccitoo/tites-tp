@@ -9,16 +9,15 @@ import {
   InputGroup,
   Badge,
   Dropdown,
-  Spinner,
 } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function CoordinadorAcademicoView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
-  const [loading, setLoading] = useState(false);
   const [tesis, setTesis] = useState([]);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
   const fileInputRef = useRef(null);
   const pendingUploadRef = useRef({ folderId: null, rowId: null });
 
@@ -28,8 +27,6 @@ function CoordinadorAcademicoView() {
       try {
         const token = localStorage.getItem("googleToken");
         if (!token) return;
-        setLoading(true); // CHANGED: start spinner
-
         const r = await fetch("/api/drive/coordinador-academico/tesis007/groups", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -43,7 +40,6 @@ function CoordinadorAcademicoView() {
               rows.push({
                 id: f.id,
                 nombre: group.groupName,
-                rol: "Tesista",
                 fecha: dt ? dt.toISOString().slice(0, 10) : "",
                 hora: dt ? dt.toTimeString().slice(0, 5) : "",
                 driveUrl: f.webViewLink,
@@ -54,7 +50,6 @@ function CoordinadorAcademicoView() {
                 groupFolderId: group.groupFolderId,
                 groupWebLink: group.groupWebLink,
                 has007: true,
-                mimeType: f.mimeType,
               });
             });
           } else {
@@ -62,7 +57,6 @@ function CoordinadorAcademicoView() {
             rows.push({
               id: `no-007-${group.groupFolderId}`,
               nombre: group.groupName,
-              rol: "Tesista",
               fecha: "",
               hora: "",
               driveUrl: group.groupWebLink,
@@ -73,7 +67,6 @@ function CoordinadorAcademicoView() {
               groupFolderId: group.groupFolderId,
               groupWebLink: group.groupWebLink,
               has007: false,
-              mimeType: null,
             });
           }
         });
@@ -82,13 +75,11 @@ function CoordinadorAcademicoView() {
       } catch (e) {
         console.error("Drive groups fetch failed:", e);
         setTesis([]);
-      } finally {
-        setLoading(false); // CHANGED: stop spinner
       }
     };
-
     fetchGroups();
   }, []);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter]);
 
   // Search + filter
   const filtered = useMemo(() => {
@@ -101,6 +92,11 @@ function CoordinadorAcademicoView() {
       return bySearch && byStatus;
     });
   }, [tesis, searchTerm, statusFilter]);
+  
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const currentPageSafe = Math.min(currentPage, totalPages);
+  const startindex = (currentPageSafe - 1) * itemsPerPage;
+  const pageItems = filtered.slice(startindex, startindex + itemsPerPage);
 
   const badgeEstado = (estado) => {
     if (estado === "pendiente")
@@ -126,7 +122,7 @@ function CoordinadorAcademicoView() {
     try {
       const token = localStorage.getItem("googleToken");
       const res = await fetch(
-        `/api/drive/coordinador-academico/tesis007/${fileId}/download`,
+        `/api/drive/coordinador-academico/tesis007/${fileId}/download-docx`,
         { headers: { Authorization: `Bearer ${token}` } } // CHANGED: fixed header
       );
       if (!res.ok) throw new Error("Download failed");
@@ -142,9 +138,8 @@ function CoordinadorAcademicoView() {
     }
   };
 
-  // Open file picker to upload F7 into the GROUP folder
+  // open file selector and upload
   const abrirSelector = (row) => {
-    // CHANGED: use groupFolderId (your current structure is root -> group -> files)
     pendingUploadRef.current = { folderId: row.groupFolderId, rowId: row.id };
     if (fileInputRef.current) fileInputRef.current.value = ""; // reset
     fileInputRef.current?.click();
@@ -166,10 +161,10 @@ function CoordinadorAcademicoView() {
       });
       if (!r.ok) throw new Error("Upload failed");
       await r.json();
-      alert("Formulario 7 subido correctamente.");
+      alert("Formulario 007 subido correctamente.");
     } catch (err) {
-      console.error("Error subiendo F7:", err);
-      alert("No se pudo subir el Formulario 7.");
+      console.error("Error subiendo Formulario 007:", err);
+      alert("No se pudo subir el Formulario 007.");
     } finally {
       pendingUploadRef.current = { folderId: null, rowId: null };
     }
@@ -222,27 +217,6 @@ function CoordinadorAcademicoView() {
             </Card>
           )}
 
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold mb-0">
-              F. TITES 007 {loading && <Spinner animation="border" size="sm" className="ms-2" />}
-            </h5>
-            <div>
-              <Button variant="outline-secondary" size="sm" className="me-2">
-                🧳 Exportar Lista
-              </Button>
-              <Button variant="success" size="sm">
-                📊 Ver Estadísticas
-              </Button>
-            </div>
-          </div>
-
-          <Card className="mb-3 shadow-sm">
-            <Card.Body className="text-muted">
-              Se listan archivos cuyo nombre <strong>empieza</strong> con <strong>“F.TITES 007”</strong>,
-              directamente dentro de cada carpeta de grupo.
-            </Card.Body>
-          </Card>
-
           {/* Filters */}
           <Row className="align-items-center mb-2 g-2">
             <Col md={6}>
@@ -276,7 +250,7 @@ function CoordinadorAcademicoView() {
           </Row>
 
           {/* Cards */}
-          {filtered.map((t) => (
+          {pageItems.map((t) => (
             <Card key={t.id} className="mb-3 shadow-sm">
               <Card.Body>
                 <Row className="align-items-center g-3">
@@ -309,34 +283,16 @@ function CoordinadorAcademicoView() {
                       ⬇️
                     </Button>
 
-                    <div className="text-muted small mt-3 mb-1">SUBIR F7</div>
+                    <div className="text-muted small mt-3 mb-1">SUBIR F.TITES 007</div>
                     <Button variant="outline-secondary" onClick={() => abrirSelector(t)}>
                       ⬆️
                     </Button>
                   </Col>
 
-                  <Col lg={2} className="d-flex flex-column align-items-center">
-                    <div className="text-muted small mb-1">APROBADO</div>
-                    <Button
-                      variant={t.estado === "aprobado" ? "success" : "outline-success"}
-                      onClick={() => setEstado(t.id, "aprobado")}
-                    >
-                      ✅
-                    </Button>
-
-                    <div className="text-muted small mt-3 mb-1">DESAPROBADO</div>
-                    <Button
-                      variant={t.estado === "desaprobado" ? "danger" : "outline-danger"}
-                      onClick={() => setEstado(t.id, "desaprobado")}
-                    >
-                      ❌
-                    </Button>
-                  </Col>
-
-                  <Col lg={4}>
+                  <Col lg={6}>
                     <Form.Control
                       as="textarea"
-                      rows={3}
+                      rows={5}
                       placeholder="Comentarios"
                       value={t.comentarios}
                       onChange={(e) => setComentario(t.id, e.target.value)}
@@ -346,8 +302,7 @@ function CoordinadorAcademicoView() {
               </Card.Body>
             </Card>
           ))}
-
-          {/* hidden input for uploads */}
+          {/* uploads */}
           <input
             ref={fileInputRef}
             type="file"
@@ -355,6 +310,34 @@ function CoordinadorAcademicoView() {
             style={{ display: "none" }}
             onChange={onFilePicked}
           />
+          {/* Pagination */}
+          <div className="d-flex justify-content-between align-items-center mt-4">
+            <Button
+              variant="outline-light"
+              className="fw-semibold px-3"
+              size ="sm"
+              disabled ={currentPageSafe <= 1}
+              onClick ={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              style={{ backgroundColor: "#198754", color: "white", border: "none" }}          
+            >
+              ◂ Anterior
+            </Button>
+
+            <div className="text-muted small">
+              Página {currentPageSafe} de {totalPages}
+            </div>
+
+            <Button
+              variant="outline-light"
+              size ="sm"
+              className="fw-semibold px-3"
+              disabled ={currentPageSafe >= totalPages}
+              onClick ={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              style={{ backgroundColor: "#198754", color: "white", border: "none" }}
+            >
+              Siguiente ▸
+            </Button>
+          </div>
         </Col>
       </Row>
     </Container>
