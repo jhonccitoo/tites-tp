@@ -1,258 +1,227 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { format } from "timeago.js";
-import { Container, Row, Col, Button, Card, ListGroup } from "react-bootstrap";
-import logoUniversidad from "../assets/logo-urp1.png";
+import { Container, Row, Col, Button, Card, Form } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import logoUniversidad from "../assets/logo-urp1.png";
 import asesor from "../assets/asesor.webp";
 
-export default class Noteslist extends Component {
-  state = {
-    notes: [],
-    filterTerm: "", // Para un campo de búsqueda
-    activeFilter: "",
-  };
+export default function Revisor1View() {
+  const [usuario] = useState({ rol: "Revisor1" });
+  const [grupos, setGrupos] = useState([]);
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [alertMsg, setAlertMsg] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [grupoModal, setGrupoModal] = useState(null);
 
-  handleFilterByTitle = (searchTerm) => {
-    this.setState({ activeFilter: searchTerm });
-  };
+  const token = localStorage.getItem("googleToken");
 
-  componentDidMount() {
-    this.getNotes();
-  }
-
-  async getNotes() {
-    const res = await axios.get("http://localhost:4000/api/notes");
-    this.setState({ notes: res.data }, () => {
-      // Callback después de obtener las notas
-      const userRole = localStorage.getItem("userRole");
-      if (userRole === "revisor1") {
-        // Reemplaza "asesor" con el rol correcto
-        this.setState({ activeFilter: "F.TITES 010" });
+  // ── Cargar grupos disponibles para Revisor1
+  useEffect(() => {
+    const getGrupos = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/api/revisor/grupos/revisor1");
+        setGrupos(res.data);
+      } catch (err) {
+        console.error("Error al obtener grupos:", err);
+        setAlertMsg("Error al obtener la lista de grupos.");
       }
+    };
+    getGrupos();
+  }, []);
+
+  // ── Cargar archivos del grupo seleccionado
+  useEffect(() => {
+    const getFiles = async () => {
+      if (!grupoSeleccionado || !token) return;
+      try {
+        const res = await axios.get(
+          `http://localhost:4000/api/drive/files?folderId=${grupoSeleccionado.carpeta_grupo_id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setFiles(res.data);
+      } catch (err) {
+        console.error("Error obteniendo archivos:", err);
+        setAlertMsg("Error al obtener los archivos de tu grupo.");
+      }
+    };
+    if (grupoSeleccionado) getFiles();
+  }, [grupoSeleccionado, token]);
+
+  // ── Obtener grupo actualizado por ID (para modal)
+  const fetchGrupoModal = async (id) => {
+    try {
+      const res = await axios.get(`http://localhost:4000/api/revisor/grupo/${id}`);
+      setGrupoModal(res.data);
+    } catch (err) {
+      console.error("Error al obtener estado del grupo:", err);
+      setAlertMsg("No se pudo cargar el estado del grupo.");
+    }
+  };
+
+  // ── Marcar grupo como revisado (check1 = true)
+const handleCheck = async (id) => {
+  try {
+    const res = await axios.patch(`http://localhost:4000/api/revisor/check/${id}`, {
+      revisor: "Revisor1"
     });
+    const grupoActualizado = res.data.grupo;
+
+    // Actualiza la lista de grupos quitando el grupo ya revisado
+    setGrupos((prev) => prev.filter((g) => g._id !== id));
+
+    // Limpiar selección y archivos
+    setGrupoSeleccionado(null);
+    setFiles([]);
+    setGrupoModal(null);
+    setShowModal(false);
+
+  } catch (err) {
+    console.error("Error al marcar check:", err);
+    setAlertMsg("No se pudo marcar el grupo como revisado.");
   }
+};
 
-  deleteNote = async (id) => {
-    await axios.delete(`http://localhost:4000/api/notes/${id}`);
-    this.getNotes();
-  };
+  return (
+    <Container fluid>
+      <Row>
+        {/* SIDEBAR */}
+        <Col style={{ width: "830px" }} className="bg-success text-white min-vh-100 p-3">
+          <div className="text-center mb-4">
+            <img src={logoUniversidad} className="img-fluid mb-2" alt="Logo Universidad" style={{ maxWidth: "150px" }} />
+            <h4 className="fw-bold">TITES</h4>
+            <img src={asesor} className="img-fluid mb-2" alt="Foto Asesor" style={{ maxWidth: "150px", borderRadius: "50%", marginTop: 35 }} />
+            <div className="mt-5">
+              <h5>{usuario?.rol || "Rol"}</h5>
+              <small>{usuario?.rol ? "USUARIO: " + usuario.rol : "Rol"}</small>
+            </div>
+          </div>
+          <div className="d-grid gap-2">
+            <Button variant="outline-light">Mis Datos Personales</Button>
+            <Button variant="outline-light">Formularios</Button>
+            <Button variant="outline-light">Tesis</Button>
+            <Button variant="outline-light">Metadatos</Button>
+          </div>
+          <div className="mt-5 text-center">
+            <Button variant="outline-light" size="sm" as={Link} to="/">Salir</Button>
+          </div>
+        </Col>
 
-  handleRedireccionar = (url) => {
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  render() {
-    const usuario = { rol: localStorage.getItem("userRole") };
-    const { notes, activeFilter } = this.state;
-    const filteredNotes = activeFilter
-      ? notes.filter((note) =>
-          note.title.toLowerCase().includes(activeFilter.toLowerCase())
-        )
-      : notes;
-
-    return (
-      <Container fluid>
-        <Row>
-          {/* Sidebar */}
-          <Col
-            style={{ width: "830px" }}
-            className="bg-success text-white min-vh-100 p-3"
-          >
-            <div className="text-center mb-4">
-              <img
-                src={logoUniversidad}
-                className="img-fluid mb-2"
-                alt="Logo Universidad"
-                style={{ maxWidth: "150px" }}
-              />
-              <h4 className="fw-bold"> TITES </h4>
-        
-              <img
-                src={asesor}
-                className="img-fluid mb-2"
-                alt="Foto Asesor"
-                style={{
-                  maxWidth: "150px",
-                  borderRadius: "50%",
-                  marginTop: 35,
+        {/* CONTENIDO PRINCIPAL */}
+        <Col md={9} className="p-4">
+          <Row className="mb-4 align-items-center">
+            <Col>
+              <h3>Grupos asignados para revisión</h3>
+            </Col>
+            <Col className="d-flex justify-content-end gap-2">
+              <Form.Select
+                size="sm"
+                value={grupoSeleccionado?._id || ""}
+                onChange={(e) => {
+                  const grupo = grupos.find((g) => g._id === e.target.value);
+                  setGrupoSeleccionado(grupo || null);
+                  setFiles([]);
                 }}
-              />
+                style={{ width: "250px" }}
+              >
+                <option value="">-- Selecciona un grupo --</option>
+                {grupos.map((g) => (
+                  <option key={g._id} value={g._id}>{g.nombreArchivo}</option>
+                ))}
+              </Form.Select>
+            </Col>
+          </Row>
 
-              <div className="mt-5">
-                <h5>{usuario?.rol || "Rol"}</h5>{" "}
-                <small>{usuario?.rol ? "USUARIO:" + usuario.rol : "Rol"}</small>
+          {/* Alertas */}
+          {alertMsg && (
+            <div className="alert alert-warning alert-dismissible fade show" role="alert">
+              {alertMsg}
+              <button type="button" className="btn-close" onClick={() => setAlertMsg("")}></button>
+            </div>
+          )}
+
+          {/* Archivos del grupo */}
+          {!grupoSeleccionado ? (
+            <div className="alert alert-info">Selecciona un grupo para ver los archivos.</div>
+          ) : (
+            <div className="row">
+              {files.filter((file) => file.name.includes("F.TITES 013")).length > 0 ? (
+                files.filter((file) => file.name.includes("F.TITES 013")).map((file) => (
+                  <div className="col-md-12 p-2" key={file.id}>
+                    <Card className="mb-3 shadow-sm">
+                      <Card.Body className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h5>{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
+                          <small>{file.mimeType}</small>
+                        </div>
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            href={`https://docs.google.com/document/d/${file.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Abrir
+                          </Button>
+
+                          <Button
+                            variant="outline-warning"
+                            size="sm"
+                            onClick={() => {
+                              fetchGrupoModal(grupoSeleccionado._id);
+                              setShowModal(true);
+                            }}
+                          >
+                            Ver Estado
+                          </Button>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+                ))
+              ) : (
+                <p>No se encontraron archivos F.TITES 013 en este grupo.</p>
+              )}
+            </div>
+          )}
+
+          {/* Modal Estado del Grupo */}
+          {showModal && grupoModal && (
+            <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+              <div className="modal-dialog">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Estado del Grupo</h5>
+                    <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                  </div>
+                  <div className="modal-body">
+                    <p><strong>Nombre del grupo:</strong> {grupoModal.nombreArchivo}</p>
+                    <p><strong>Estado:</strong> 
+                      <span className={
+                        grupoModal.estado === "REVISADO" ? "text-success fw-bold" :
+                        grupoModal.estado === "EN REVISIÓN" ? "text-warning fw-bold" :
+                        "text-secondary fw-bold"
+                      }>
+                        {grupoModal.estado || "PENDIENTE"}
+                      </span>
+                    </p>
+                    <p><strong>Check Revisor1:</strong> {grupoModal.check1 ? "✅" : "❌"}</p>
+                    <p><strong>Check Revisor2:</strong> {grupoModal.check2 ? "✅" : "❌"}</p>
+                  </div>
+                  <div className="modal-footer">
+                    <Button variant="secondary" onClick={() => setShowModal(false)}>Cerrar</Button>
+                    {!grupoModal.check1 && (
+                      <Button variant="success" onClick={() => handleCheck(grupoModal._id)}>✅ Aprobar</Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="d-grid gap-2">
-              <Button
-                variant="outline-light"
-                onClick={() => this.handleFilterByTitle("F.TITES 010")}
-              >
-                Filtrar por F.TITES 010
-              </Button>
-              <Button
-                variant="outline-light"
-                onClick={() => this.handleFilterByTitle("F.TITES 012")}
-              >
-                Filtrar por F.TITES 012
-              </Button>
-              <Button
-                variant="outline-light"
-                onClick={() => this.handleFilterByTitle("F.TITES 013")}
-              >
-                Filtrar por F.TITES 013
-              </Button>
-            </div>
-            <div className="mt-5 text-center">
-              <Button variant="outline-light" size="sm">
-                <Link to="/">Salir</Link>
-              </Button>
-            </div>
-          </Col>
-
-          <Col md={9} className="p-4">
-            <div className="row">
-              {filteredNotes.map((note) => (
-                <div className="col-md-12 p-2" key={note._id}>
-                  <Card className="mb-3">
-                    <Card.Body className="d-flex flex-column">
-                      {" "}
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                          <h5 className="mb-0">{note.title}</h5>
-                          <small>{note.author}</small>
-                        </div>
-                        {usuario?.rol !== "tesista" && (
-                          <Link
-                            className="btn btn-secondary btn-sm"
-                            to={`/edit/${note._id}`}
-                          >
-                            Calificar
-                          </Link>
-                        )}
-                      </div>
-                      <div className="d-flex align-items-center mb-3">
-                        <div className="text-center me-4">
-                          <small className="d-block fw-bold text-secondary">
-                            FORMULARIO 
-                          </small>
-                          <div className="d-flex gap-2 justify-content-center">
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() => 
-                                {usuario?.rol == "tesista" && ( this.handleRedireccionar(
-                                  "https://drive.google.com/drive/folders/1X4THssnsB4ZqGrzBd2H473U_GIHa1b12?usp=drive_link"
-                                ) ) }
-                              }
-                            >
-                              ⬇
-                            </Button>
-                          </div>
-                          <small className="d-block fw-bold text-secondary mt-2">
-                            SUBIR
-                          </small>
-                          <div className="d-flex gap-2 justify-content-center">
-                            <Button
-                              variant="outline-success"
-                              size="sm"
-                              onClick={() =>
-                                this.handleRedireccionar(
-                                  "https://drive.google.com/drive/folders/1X4THssnsB4ZqGrzBd2H473U_GIHa1b12?usp=drive_link"
-                                )
-                              }
-                            >
-                              ⬆
-                            </Button>
-                          </div>
-                        </div>
-
-                        <small className="text-muted me-3">
-                          {format(note.date)}
-                        </small>
-
-                        <textarea
-                          placeholder="Comentarios"
-                          className="form-control w-25 me-4"
-                          style={{ height: "120px", resize: "none" }}
-                          defaultValue={note.content}
-                        ></textarea>
-
-                        <div className="text-center me-4">
-                          <small className="d-block fw-bold text-secondary">
-                            APROBADO
-                          </small>
-                          <div className="d-flex gap-2 justify-content-center">
-                            <Button
-                              variant={
-                                note.approvalStatus === "2"
-                                  ? "success"
-                                  : "outline-secondary"
-                              }
-                              size="sm"
-                            >
-                              {note.approvalStatus === "2" ? "✔" : "☐"}
-                            </Button>
-                          </div>
-                          <small className="d-block fw-bold text-secondary mt-2">
-                            DESAPROBADO
-                          </small>
-                          <div className="d-flex gap-2 justify-content-center">
-                            <Button
-                              variant={
-                                note.approvalStatus === "1"
-                                  ? "danger"
-                                  : "outline-secondary"
-                              }
-                              size="sm"
-                            >
-                              {note.approvalStatus === "1" ? "✘" : "☐"}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {usuario?.rol !== "tesista" && (
-                          <div className="text-center me-4">
-                            <small className="d-block fw-bold text-secondary">
-                              MANDAR A CARPETA FINAL
-                            </small>
-                            <div className="d-flex gap-2 justify-content-center">
-                              <Button
-                                variant="outline-success"
-                                size="sm"
-                                onClick={() =>
-                                  this.handleRedireccionar(
-                                    "https://drive.google.com/drive/folders/1iNe9_5MSC0yr-Tv1KQQx4NxqKtXnECVR?usp=sharing"
-                                  )
-                                }
-                              >
-                                ✉️
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="d-flex justify-content-end">
-                        {usuario?.rol !== "tesista" && (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => this.deleteNote(note._id)}
-                          >
-                            Delete
-                          </Button>
-                        )}
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </div>
-              ))}
-            </div>
-          </Col>
-        </Row>
-      </Container>
-    );
-  }
+        </Col>
+      </Row>
+    </Container>
+  );
 }
