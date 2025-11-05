@@ -11,6 +11,7 @@ import {
   Modal,
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import BandejaCambios from "../components/bandejanotificadora.jsx";
 
 // Importa tus imágenes
 import logoUniversidad from "../assets/logo-urp1.png";
@@ -33,6 +34,7 @@ const fileIcon = (
 
 // Componente funcional con Hooks
 export default function AsesorView() {
+  const [tab, setTab] = useState("fAsesor");
   // --- Estados para manejar la UI y los datos ---
   const [usuario] = useState({ rol: localStorage.getItem("userRole") });
   const [files, setFiles] = useState([]);
@@ -178,10 +180,39 @@ export default function AsesorView() {
           </div>
 
           <div className="d-grid gap-2">
-            <Button variant="outline-light">Mis Datos Personales</Button>
-            <Button variant="outline-light">Formularios</Button>
-            <Button variant="outline-light">Tesis</Button>
-            <Button variant="outline-light">Metadatos</Button>
+            <Button 
+              variant={tab== "fAsesor" ? "light":"outline-light"}
+              className="w-100 mb-2 text-start fw-semibold"
+              onClick ={() => setTab("fAsesor")}
+              >
+              Mis Datos Personales
+            </Button>
+            <Button 
+              variant="outline-light"
+              className="w-100 mb-2 text-start fw-semibold"
+              >
+              Formularios
+            </Button>
+            <Button 
+              variant="outline-light"
+              className="w-100 mb-2 text-start fw-semibold"
+              >
+              Tesis
+            </Button>
+            <Button 
+              variant="outline-light"
+              className="w-100 mb-2 text-start fw-semibold"
+              >
+              Metadatos
+            </Button>
+            <Button 
+              variant={tab== "notifs" ? "light":"outline-light"}
+              className="w-100 mb-2 text-start fw-semibold"
+              onClick ={() => setTab("notifs")}
+              >
+              Notificaciones
+            </Button>
+
           </div>
 
           <div className="mt-5 text-center">
@@ -193,105 +224,110 @@ export default function AsesorView() {
 
         {/* --- Área de Contenido Principal --- */}
         <Col md={9} className="p-4">
-          {/* Fila de Controles Superiores */}
-          <Row className="mb-4 align-items-center">
-            <Col md={6}>
-              <h3>Archivos de Grupos Asignados</h3>
-            </Col>
-            {/* Nuevo selector de Procesos */}
-            <Col md={3}>
-              <Form.Select
-                size="sm"
-                onChange={handleProcesosChange}
-                style={{ maxWidth: "250px" }}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  -- Procesos --
-                </option>
-                <option value="Corregir proyecto de tesis">
-                  Corregir proyecto de tesis
-                </option>
-                <option value="Asesorar tesis">Asesorar tesis</option>
-                <option value="validate_report">
-                  Validar y Firmar Reporte de Avance Semanal
-                </option>
-              </Form.Select>
-            </Col>
-            <Col md={3} className="d-flex justify-content-end">
-              {/* Selector de Grupos */}
-              <Form.Select
-                size="sm"
-                value={
-                  grupoSeleccionado
-                    ? grupos.findIndex((g) => g._id === grupoSeleccionado._id)
-                    : ""
-                }
-                onChange={handleGrupoChange}
-                style={{ maxWidth: "250px" }}
-              >
-                <option value="">-- Selecciona un Grupo --</option>
-                {grupos.map((grupo, index) => (
-                  <option key={grupo._id} value={index}>
-                    {grupo.grupo}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-          </Row>
+          {tab === "notifs" ? (
+            <BandejaCambios role="asesor" />
+          ) : (
+            <>
+                  {/* Fila de Controles Superiores */}
+              <Row className="mb-4 align-items-center">
+                <Col md={6}>
+                  <h3>Archivos de Grupos Asignados</h3>
+                </Col>
+                {/* Nuevo selector de Procesos */}
+                <Col md={3}>
+                  <Form.Select
+                    size="sm"
+                    onChange={handleProcesosChange}
+                    style={{ maxWidth: "250px" }}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>
+                      -- Procesos --
+                    </option>
+                    <option value="Corregir proyecto de tesis">
+                      Corregir proyecto de tesis
+                    </option>
+                    <option value="Asesorar tesis">Asesorar tesis</option>
+                    <option value="validate_report">
+                      Validar y Firmar Reporte de Avance Semanal
+                    </option>
+                  </Form.Select>
+                </Col>
+                <Col md={3} className="d-flex justify-content-end">
+                  {/* Selector de Grupos */}
+                  <Form.Select
+                    size="sm"
+                    value={
+                      grupoSeleccionado
+                        ? grupos.findIndex((g) => g._id === grupoSeleccionado._id)
+                        : ""
+                    }
+                    onChange={handleGrupoChange}
+                    style={{ maxWidth: "250px" }}
+                  >
+                    <option value="">-- Selecciona un Grupo --</option>
+                    {grupos.map((grupo, index) => (
+                      <option key={grupo._id} value={index}>
+                        {grupo.grupo}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Col>
+              </Row>
 
-          {alertMsg && <div className="alert alert-info">{alertMsg}</div>}
+              {alertMsg && <div className="alert alert-info">{alertMsg}</div>}
 
-          {/* Listado de Archivos con diseño de tarjetas */}
-          <div className="row">
-            {grupoSeleccionado ? (
-              files.length > 0 ? (
-                files.map((file) => (
-                  <div className="col-md-12 p-2" key={file.id}>
-                    <Card className="mb-3">
-                      <Card.Body>
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center">
-                            {fileIcon}
-                            <div>
-                              <h5 className="mb-0">{file.name}</h5>
-                              <small className="text-muted">
-                                {file.mimeType}
-                              </small>
+              {/* Listado de Archivos con diseño de tarjetas */}
+              <div className="row">
+                {grupoSeleccionado ? (
+                  files.length > 0 ? (
+                    files.map((file) => (
+                      <div className="col-md-12 p-2" key={file.id}>
+                        <Card className="mb-3">
+                          <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <div className="d-flex align-items-center">
+                                {fileIcon}
+                                <div>
+                                  <h5 className="mb-0">{file.name}</h5>
+                                  <small className="text-muted">
+                                    {file.mimeType}
+                                  </small>
+                                </div>
+                              </div>
+                              <div className="d-flex gap-2">
+                                <Button variant="secondary" size="sm">
+                                  Calificar
+                                </Button>
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleOpenFile(file.id)}
+                                >
+                                  Ver Archivo
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                          <div className="d-flex gap-2">
-                            <Button variant="secondary" size="sm">
-                              Calificar
-                            </Button>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              onClick={() => handleOpenFile(file.id)}
-                            >
-                              Ver Archivo
-                            </Button>
-                          </div>
-                        </div>
-                      </Card.Body>
-                    </Card>
-                  </div>
-                ))
-              ) : (
-                <p>
-                  {filterActive
-                    ? `El formulario F.TITES 008 no se encuentra en este grupo.`
-                    : `El grupo ${grupoSeleccionado.grupo} no tiene archivos actualmente.`}
-                </p>
-              )
-            ) : (
-              <p>
-                Por favor, selecciona un grupo desde el menú lateral o el
-                selector para ver sus archivos.
-              </p>
-            )}
-          </div>
-        </Col>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    ))
+                  ) : (
+                    <p>
+                      {filterActive
+                        ? `El formulario F.TITES 008 no se encuentra en este grupo.`
+                        : `El grupo ${grupoSeleccionado.grupo} no tiene archivos actualmente.`}
+                    </p>
+                  )
+                ) : (
+                  <p>
+                    Por favor, selecciona un grupo desde el menú lateral o el
+                    selector para ver sus archivos.
+                  </p>
+                )}
+              </div>
+            </>)}
+          </Col>
       </Row>
     </Container>
   );

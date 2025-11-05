@@ -11,8 +11,11 @@ import {
   Dropdown,
 } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
+import BandejaCambios from "../components/bandejanotificadora";
+import { Link } from "react-router-dom";
 
 function CoordinadorAcademicoView() {
+  const [tab,setTab] = useState("f007");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [tesis, setTesis] = useState([]);
@@ -193,151 +196,173 @@ function CoordinadorAcademicoView() {
             <div style={{ fontSize: "0.8rem" }}>COORDINADOR ACADÉMICO</div>
           </div>
 
-          <div className="w-100 px-3">
-            <Button variant="light" className="w-100 mb-2 text-start fw-semibold" active>
-              F. TITES 007
+          <div className="d-grid gap-2">
+            <Button 
+              variant={tab== "f007" ? "light":"outline-light"}
+              className="w-100 mb-2 text-start fw-semibold"
+              onClick ={() => setTab("f007")}
+              >
+              F.TITES 007
+            </Button>
+
+            <Button
+              variant={tab== "notifs" ? "light":"outline-light"}
+              className="w-100 mb-2 text-start fw-semibold"
+              onClick ={() => setTab("notifs")}
+              >
+              Notificaciones
             </Button>
           </div>
 
-          <div className="mt-auto px-3 w-100">
-            <Button variant="outline-light" className="w-100 fw-semibold">
-              ⏻ Salir
+          <div className="mt-5 text-center">
+            <Button 
+            variant="outline-light" 
+            className="w-100 fw-semibold btn-salir"
+            as ={Link} to="/"
+            >
+              Salir
             </Button>
           </div>
         </Col>
 
         {/* Main */}
         <Col md={10} className="bg-light px-4 py-3">
-          {!token && (
-            <Card className="mb-3 border-warning">
-              <Card.Body>
-                Necesitas conectar Google Drive para listar los documentos.
-                {/* You can place your ConnectGoogleButton here if you added it */}
-              </Card.Body>
-            </Card>
-          )}
+          {tab === "notifs" ? (
+            <BandejaCambios role="coord_acad" />
+          ) : (
+            <>
+              {!token && (
+                <Card className="mb-3 border-warning">
+                  <Card.Body>
+                    Necesitas conectar Google Drive para listar los documentos.
+                    {/* You can place your ConnectGoogleButton here if you added it */}
+                  </Card.Body>
+                </Card>
+              )}
 
-          {/* Filters */}
-          <Row className="align-items-center mb-2 g-2">
-            <Col md={6}>
-              <InputGroup>
-                <InputGroup.Text>🔎</InputGroup.Text>
-                <Form.Control
-                  placeholder="Buscar por grupo o nombre de archivo…"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </InputGroup>
-            </Col>
-            <Col md="auto" className="text-muted small">
-              Mostrando {filtered.length} de {tesis.length} filas
-            </Col>
-            <Col md="auto" className="ms-auto">
-              <Dropdown onSelect={(k) => setStatusFilter(k || "todos")}>
-                <Dropdown.Toggle variant="outline-secondary" size="sm">
-                  {statusFilter === "todos"
-                    ? "Todos los estados"
-                    : statusFilter[0].toUpperCase() + statusFilter.slice(1)}
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  <Dropdown.Item eventKey="todos">Todos</Dropdown.Item>
-                  <Dropdown.Item eventKey="pendiente">Pendiente</Dropdown.Item>
-                  <Dropdown.Item eventKey="aprobado">Aprobado</Dropdown.Item>
-                  <Dropdown.Item eventKey="desaprobado">Desaprobado</Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-            </Col>
-          </Row>
-
-          {/* Cards */}
-          {pageItems.map((t) => (
-            <Card key={t.id} className="mb-3 shadow-sm">
-              <Card.Body>
-                <Row className="align-items-center g-3">
-                  <Col lg={4}>
-                    <div className="fw-bold" style={{ letterSpacing: ".4px" }}>
-                      {t.nombre}
-                    </div>
-                    <div className="text-muted small">{t.fileName}</div>
-                    <div className="mt-2">{badgeEstado(t.estado)}</div>
-                    <div className="text-muted small mt-2">
-                      {t.ultima
-                        ? <>Última modificación: {t.ultima}{t.hora && ` — ${t.hora}`}</>
-                        : "Sin fecha"}
-                    </div>
-                    <div className="mt-2">
-                      <a href={t.groupWebLink} target="_blank" rel="noreferrer" className="small">
-                        Abrir carpeta del grupo ▸
-                      </a>
-                    </div>
-                  </Col>
-
-                  <Col lg={2} className="d-flex flex-column align-items-center">
-                    <div className="text-muted small mb-1">DESCARGAR</div>
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => t.has007 && descargar(t.id, t.fileName)}
-                      disabled={!t.has007} // CHANGED: disable if no 007
-                      title={t.has007 ? "Descargar" : "No tiene documento F.TITES 007"}
-                    >
-                      ⬇️
-                    </Button>
-
-                    <div className="text-muted small mt-3 mb-1">SUBIR F.TITES 007</div>
-                    <Button variant="outline-secondary" onClick={() => abrirSelector(t)}>
-                      ⬆️
-                    </Button>
-                  </Col>
-
-                  <Col lg={6}>
+              {/* Filters */}
+              <Row className="align-items-center mb-2 g-2">
+                <Col md={6}>
+                  <InputGroup>
+                    <InputGroup.Text>🔎</InputGroup.Text>
                     <Form.Control
-                      as="textarea"
-                      rows={5}
-                      placeholder="Comentarios"
-                      value={t.comentarios}
-                      onChange={(e) => setComentario(t.id, e.target.value)}
+                      placeholder="Buscar por grupo o nombre de archivo…"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          ))}
-          {/* uploads */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            style={{ display: "none" }}
-            onChange={onFilePicked}
-          />
-          {/* Pagination */}
-          <div className="d-flex justify-content-between align-items-center mt-4">
-            <Button
-              variant="outline-light"
-              className="fw-semibold px-3"
-              size ="sm"
-              disabled ={currentPageSafe <= 1}
-              onClick ={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              style={{ backgroundColor: "#198754", color: "white", border: "none" }}          
-            >
-              ◂ Anterior
-            </Button>
+                  </InputGroup>
+                </Col>
+                <Col md="auto" className="text-muted small">
+                  Mostrando {filtered.length} de {tesis.length} filas
+                </Col>
+                <Col md="auto" className="ms-auto">
+                  <Dropdown onSelect={(k) => setStatusFilter(k || "todos")}>
+                    <Dropdown.Toggle variant="outline-secondary" size="sm">
+                      {statusFilter === "todos"
+                        ? "Todos los estados"
+                        : statusFilter[0].toUpperCase() + statusFilter.slice(1)}
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu>
+                      <Dropdown.Item eventKey="todos">Todos</Dropdown.Item>
+                      <Dropdown.Item eventKey="pendiente">Pendiente</Dropdown.Item>
+                      <Dropdown.Item eventKey="aprobado">Aprobado</Dropdown.Item>
+                      <Dropdown.Item eventKey="desaprobado">Desaprobado</Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </Col>
+              </Row>
 
-            <div className="text-muted small">
-              Página {currentPageSafe} de {totalPages}
-            </div>
+              {/* Cards */}
+              {pageItems.map((t) => (
+                <Card key={t.id} className="mb-3 shadow-sm">
+                  <Card.Body>
+                    <Row className="align-items-center g-3">
+                      <Col lg={4}>
+                        <div className="fw-bold" style={{ letterSpacing: ".4px" }}>
+                          {t.nombre}
+                        </div>
+                        <div className="text-muted small">{t.fileName}</div>
+                        <div className="mt-2">{badgeEstado(t.estado)}</div>
+                        <div className="text-muted small mt-2">
+                          {t.ultima
+                            ? <>Última modificación: {t.ultima}{t.hora && ` — ${t.hora}`}</>
+                            : "Sin fecha"}
+                        </div>
+                        <div className="mt-2">
+                          <a href={t.groupWebLink} target="_blank" rel="noreferrer" className="small">
+                            Abrir carpeta del grupo ▸
+                          </a>
+                        </div>
+                      </Col>
 
-            <Button
-              variant="outline-light"
-              size ="sm"
-              className="fw-semibold px-3"
-              disabled ={currentPageSafe >= totalPages}
-              onClick ={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              style={{ backgroundColor: "#198754", color: "white", border: "none" }}
-            >
-              Siguiente ▸
-            </Button>
-          </div>
+                      <Col lg={2} className="d-flex flex-column align-items-center">
+                        <div className="text-muted small mb-1">DESCARGAR</div>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() => t.has007 && descargar(t.id, t.fileName)}
+                          disabled={!t.has007} // CHANGED: disable if no 007
+                          title={t.has007 ? "Descargar" : "No tiene documento F.TITES 007"}
+                        >
+                          ⬇️
+                        </Button>
+
+                        <div className="text-muted small mt-3 mb-1">SUBIR F.TITES 007</div>
+                        <Button variant="outline-secondary" onClick={() => abrirSelector(t)}>
+                          ⬆️
+                        </Button>
+                      </Col>
+
+                      <Col lg={6}>
+                        <Form.Control
+                          as="textarea"
+                          rows={5}
+                          placeholder="Comentarios"
+                          value={t.comentarios}
+                          onChange={(e) => setComentario(t.id, e.target.value)}
+                        />
+                      </Col>
+                    </Row>
+                  </Card.Body>
+                </Card>
+              ))}
+              {/* uploads */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                style={{ display: "none" }}
+                onChange={onFilePicked}
+              />
+              {/* Pagination */}
+              <div className="d-flex justify-content-between align-items-center mt-4">
+                <Button
+                  variant="outline-light"
+                  className="fw-semibold px-3"
+                  size ="sm"
+                  disabled ={currentPageSafe <= 1}
+                  onClick ={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  style={{ backgroundColor: "#198754", color: "white", border: "none" }}          
+                >
+                  ◂ Anterior
+                </Button>
+
+                <div className="text-muted small">
+                  Página {currentPageSafe} de {totalPages}
+                </div>
+
+                <Button
+                  variant="outline-light"
+                  size ="sm"
+                  className="fw-semibold px-3"
+                  disabled ={currentPageSafe >= totalPages}
+                  onClick ={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  style={{ backgroundColor: "#198754", color: "white", border: "none" }}
+                >
+                  Siguiente ▸
+                </Button>
+              </div>
+            </>
+          )}
         </Col>
       </Row>
     </Container>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Container, Row, Col, Button, Card, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Card, Form, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
 // Puedes mantener tus imágenes si las necesitas
@@ -44,6 +44,13 @@ export default function TesistaView() {
   // Estado para alertas y mensajes al usuario
   const [alertMsg, setAlertMsg] = useState("");
 
+  // Estado del cambio de archivos
+  const [showCambio, setShowCambio] = useState(false);
+  const [tipoCambio, setTipoCambio] = useState("cambio_tema");
+  const [motivoCambio, setMotivoCambio] = useState("");
+  const [sendingCambio, setSendingCambio] = useState(false);
+
+  // Obtener el token de Google almacenado
   const token = localStorage.getItem("googleToken");
 
   // --- CAMBIO 2: El useEffect ahora solo depende del token para cargar los archivos del grupo fijo ---
@@ -132,6 +139,43 @@ export default function TesistaView() {
     }
   };
 
+  const enviarSolicitudCambio = async () => {
+    try {
+      setSendingCambio(true);
+
+      // TODO: Obtén estos valores de tu propio estado/contexto/props
+      const groupFolderId = grupoSeleccionado.carpeta_grupo_id;
+      const groupName = grupoSeleccionado.grupo;
+      const tesistaFullName = localStorage.getItem("userName") || "Nombre Tesista";
+
+      const res = await fetch("/api/cambios/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupFolderId,       // ← ID de la carpeta de Drive del grupo (clave en tu sistema)
+          groupName,           // ← Texto visible (p.ej. “Grupo 03 – Juan Pérez”)
+          tesistaFullName,     // ← Nombre y apellido del tesista
+          tipo: tipoCambio,    // 'cambio_tema' | 'salida_companero'
+          motivo: motivoCambio // opcional
+        }),
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Error notificando cambio");
+      }
+
+      alert("Se notificó a asesor, coordinador académico y coordinador general.");
+      setShowCambio(false);
+      setMotivoCambio("");
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo notificar. Revisa la consola del backend.");
+    } finally {
+      setSendingCambio(false);
+    }
+  };
+
   // --- CAMBIO 3: La función handleGrupoChange ya no es necesaria y se puede eliminar ---
 
   // --- NUEVOS ESTADOS PARA EL MODAL DE ESTADO ---
@@ -161,6 +205,7 @@ export default function TesistaView() {
             <Button variant="outline-light">Formularios</Button>
             <Button variant="outline-light">Tesis</Button>
             <Button variant="outline-light">Metadatos</Button>
+            <Button variant="outline-light" onClick={()=> setShowCambio(true)}>Cambio</Button>
           </div>
           <div className="mt-5 text-center">
             <Button variant="outline-light" size="sm" as={Link} to="/">Salir</Button>
@@ -291,6 +336,46 @@ export default function TesistaView() {
           </div>
         </div>
       )}
+      {/* --- Modal Cambios (Solicitar cambio) --- */}
+      <Modal show={showCambio} onHide={() => setShowCambio(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Solicitar cambio</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-danger mb-2">
+            Esto solo enviará la notificación a las autoridades.<br />
+            <b>No se eliminará ningún formulario todavía.</b>
+          </p>
+
+          <Form.Group className="mb-2">
+            <Form.Label>Tipo de cambio</Form.Label>
+            <Form.Select value={tipoCambio} onChange={(e) => setTipoCambio(e.target.value)}>
+              <option value="cambio_tema">Cambio de tema</option>
+              <option value="salida_companero">Salida de compañero</option>
+            </Form.Select>
+          </Form.Group>
+
+          <Form.Group>
+            <Form.Label>Motivo (opcional)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={motivoCambio}
+              onChange={(e) => setMotivoCambio(e.target.value)}
+              placeholder="Describe brevemente el motivo"
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCambio(false)}>
+            Cancelar
+          </Button>
+          <Button variant="danger" onClick={enviarSolicitudCambio} disabled={sendingCambio}>
+            {sendingCambio ? "Enviando…" : "Notificar a todos"}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
 
       {/* --- Modal Estado y Correcciones --- */}
       {showEstadoModal && archivoSeleccionado && (
@@ -348,6 +433,7 @@ export default function TesistaView() {
           </div>
         </div>
       )}
+      
     </Container>
   );
 }

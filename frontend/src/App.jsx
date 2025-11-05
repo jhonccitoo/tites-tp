@@ -23,7 +23,7 @@ import Revisor2View from "./screens/revisor2-view.jsx";
 // --- CORRECCIÓN: Renombramos las importaciones para que no tengan el mismo nombre ---
 import DashboardTesistaView from "./screens/tesista-view.jsx";
 import RegistroProyectoTesistaView from "./screens/registro-proyectoTESISTA.jsx";
-import Asesor from "./screens/registro-proyectoAsesor.jsx";
+import Asesor from "./screens/asesor-view.jsx";
 //------
 
 import CoordinadorGeneralView from "./screens/coordinadorGeneral.jsx";

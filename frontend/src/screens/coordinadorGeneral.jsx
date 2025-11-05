@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button, Card, ListGroup, Badge, Form, Modal, Alert, Toast, ToastContainer } from "react-bootstrap";
 import logoUniversidad from "../assets/logo-urp1.png";
+import BandejaCambios from "../components/bandejanotificadora.jsx";
+import { Link } from "react-router-dom";
 
 function CoordinadorGeneralView() {
+  const [tab,setTab] = useState("fcordGer");
   const [activeForm, setActiveForm] = useState("F. TITES 009");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
@@ -234,215 +237,232 @@ function CoordinadorGeneralView() {
             {["F. TITES 009", "F. TITES 010", "F. TITES 012", "F. TITES 013", "F. TITES 016"].map((form) => (
               <Button
                 key={form}
-                variant={activeForm === form ? "light" : "outline-light"}
+                variant={tab === "fcordGer" ? "light" : "outline-light"}
                 className="text-start"
-                onClick={() => setActiveForm(form)}
+                onClick={() => setTab("fcordGer")}
               >
                 {form}
               </Button>
             ))}
+            <Button
+              variant={tab== "notifs" ? "light":"outline-light"}
+              className="w-100 mb-2 text-start fw-semibold"
+              onClick ={() => setTab("notifs")}
+            >
+            Notificaciones
+            </Button>           
           </div>
 
           <div className="mt-5 text-center">
-            <Button variant="outline-light" size="sm" onClick={() => showNotification("Sesión cerrada", "info")}>
-              🚪 Salir
+            <Button 
+            variant="outline-light" 
+            className="w-100 fw-semibold btn-salir"
+            as ={Link} to="/"
+            >
+              Salir
             </Button>
           </div>
         </Col>
 
         {/* Main Content */}
         <Col md={10} className="p-4">
-          {/* Toast Notifications */}
-          <ToastContainer position="top-end" className="p-3">
-            <Toast show={showToast} onClose={() => setShowToast(false)} bg={alertType}>
-              <Toast.Header>
-                <strong className="me-auto">Notificación</strong>
-              </Toast.Header>
-              <Toast.Body className="text-white">{toastMessage}</Toast.Body>
-            </Toast>
-          </ToastContainer>
+          {tab === "notifs" ? (
+            <BandejaCambios role="coord_gral" /> 
+          ):(
+            <>
+                {/* Toast Notifications */}
+              <ToastContainer position="top-end" className="p-3">
+                <Toast show={showToast} onClose={() => setShowToast(false)} bg={alertType}>
+                  <Toast.Header>
+                    <strong className="me-auto">Notificación</strong>
+                  </Toast.Header>
+                  <Toast.Body className="text-white">{toastMessage}</Toast.Body>
+                </Toast>
+              </ToastContainer>
 
-          {/* Alert */}
-          {showAlert && (
-            <Alert variant={alertType} dismissible onClose={() => setShowAlert(false)}>
-              {alertMessage}
-            </Alert>
-          )}
+              {/* Alert */}
+              {showAlert && (
+                <Alert variant={alertType} dismissible onClose={() => setShowAlert(false)}>
+                  {alertMessage}
+                </Alert>
+              )}
 
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-            <h3 className="mb-3 mb-md-0">{activeForm}</h3>
-            <div className="d-flex gap-2">
-              <Button variant="outline-success" onClick={handleExport}>
-                📥 Exportar Lista
-              </Button>
-              <Button variant="success" onClick={handleShowStats}>
-                📊 Ver Estadísticas
-              </Button>
-            </div>
-          </div>
-
-          <Card className="mb-4 bg-light">
-            <Card.Body>
-              <h5 className="mb-2">Descripción del Formulario</h5>
-              <p className="text-secondary">{getFormDescription(activeForm)}</p>
-            </Card.Body>
-          </Card>
-
-          {/* Filter and Search */}
-          <div className="d-flex flex-column flex-md-row justify-content-between mb-4 gap-3">
-            <Form.Group style={{ width: "100%", maxWidth: "300px" }}>
-              <div className="position-relative">
-                <Form.Control 
-                  type="text" 
-                  placeholder="🔍 Buscar tesista..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+                <h3 className="mb-3 mb-md-0">{activeForm}</h3>
+                <div className="d-flex gap-2">
+                  <Button variant="outline-success" onClick={handleExport}>
+                    📥 Exportar Lista
+                  </Button>
+                  <Button variant="success" onClick={handleShowStats}>
+                    📊 Ver Estadísticas
+                  </Button>
+                </div>
               </div>
-            </Form.Group>
-            <Form.Group>
-              <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="todos">Todos los estados</option>
-                <option value="pendientes">Pendientes</option>
-                <option value="aprobados">Aprobados</option>
-                <option value="desaprobados">Desaprobados</option>
-              </Form.Select>
-            </Form.Group>
-          </div>
 
-          {/* Results count */}
-          <div className="mb-3">
-            <small className="text-muted">
-              Mostrando {currentStudents.length} de {filteredStudents.length} estudiantes
-            </small>
-          </div>
+              <Card className="mb-4 bg-light">
+                <Card.Body>
+                  <h5 className="mb-2">Descripción del Formulario</h5>
+                  <p className="text-secondary">{getFormDescription(activeForm)}</p>
+                </Card.Body>
+              </Card>
 
-          {/* Student List */}
-          <ListGroup className="mb-4">
-            {currentStudents.length === 0 ? (
-              <Alert variant="info">No se encontraron estudiantes con los criterios de búsqueda.</Alert>
-            ) : (
-              currentStudents.map((student) => (
-                <ListGroup.Item key={student.id} className="mb-3 p-0 border-0">
-                  <Card>
-                    <Card.Body className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-                      <div style={{ minWidth: "200px" }}>
-                        <h5 className="mb-0">{student.name}</h5>
-                        <small>Tesista</small>
-                        <div className="mt-1">
-                          <Badge bg={
-                            student.status === "aprobado" ? "success" : 
-                            student.status === "desaprobado" ? "danger" : "warning"
-                          }>
-                            {student.status.toUpperCase()}
-                          </Badge>
-                          {!student.hasDocument && (
-                            <Badge bg="secondary" className="ms-1">Sin documento</Badge>
-                          )}
-                        </div>
-                        <small className="text-muted">
-                          Última modificación: {student.lastModified}
-                        </small>
-                      </div>
+              {/* Filter and Search */}
+              <div className="d-flex flex-column flex-md-row justify-content-between mb-4 gap-3">
+                <Form.Group style={{ width: "100%", maxWidth: "300px" }}>
+                  <div className="position-relative">
+                    <Form.Control 
+                      type="text" 
+                      placeholder="🔍 Buscar tesista..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </Form.Group>
+                <Form.Group>
+                  <Form.Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="todos">Todos los estados</option>
+                    <option value="pendientes">Pendientes</option>
+                    <option value="aprobados">Aprobados</option>
+                    <option value="desaprobados">Desaprobados</option>
+                  </Form.Select>
+                </Form.Group>
+              </div>
 
-                      {/* Download/Upload */}
-                      <div className="text-center me-4">
-                        <small className="d-block fw-bold text-secondary">DESCARGAR</small>
-                        <div className="d-flex gap-2 justify-content-center">
-                          <Button 
-                            variant={student.hasDocument ? "outline-success" : "outline-secondary"}
-                            disabled={!student.hasDocument}
-                            onClick={() => handleDownload(student)}
-                          >
-                            ⬇️
-                          </Button>
-                        </div>
-                        <small className="d-block fw-bold text-secondary mt-2">SUBIR</small>
-                        <div className="d-flex gap-2 justify-content-center">
-                          <Button 
-                            variant="outline-success"
-                            onClick={() => handleUpload(student)}
-                          >
-                            ⬆️
-                          </Button>
-                        </div>
-                      </div>
+              {/* Results count */}
+              <div className="mb-3">
+                <small className="text-muted">
+                  Mostrando {currentStudents.length} de {filteredStudents.length} estudiantes
+                </small>
+              </div>
 
-                      {/* Approve/Disapprove */}
-                      <div className="text-center me-4">
-                        <small className="d-block fw-bold text-secondary">APROBADO</small>
-                        <div className="d-flex gap-2 justify-content-center">
-                          <Button 
-                            variant={student.status === "aprobado" ? "success" : "outline-success"}
-                            onClick={() => handleStatusChange(student.id, "aprobado")}
-                          >
-                            ✅
-                          </Button>
-                        </div>
-                        <small className="d-block fw-bold text-secondary mt-2">DESAPROBADO</small>
-                        <div className="d-flex gap-2 justify-content-center">
-                          <Button 
-                            variant={student.status === "desaprobado" ? "danger" : "outline-danger"}
-                            onClick={() => handleStatusChange(student.id, "desaprobado")}
-                          >
-                            ❌
-                          </Button>
-                        </div>
-                      </div>
+              {/* Student List */}
+              <ListGroup className="mb-4">
+                {currentStudents.length === 0 ? (
+                  <Alert variant="info">No se encontraron estudiantes con los criterios de búsqueda.</Alert>
+                ) : (
+                  currentStudents.map((student) => (
+                    <ListGroup.Item key={student.id} className="mb-3 p-0 border-0">
+                      <Card>
+                        <Card.Body className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                          <div style={{ minWidth: "200px" }}>
+                            <h5 className="mb-0">{student.name}</h5>
+                            <small>Tesista</small>
+                            <div className="mt-1">
+                              <Badge bg={
+                                student.status === "aprobado" ? "success" : 
+                                student.status === "desaprobado" ? "danger" : "warning"
+                              }>
+                                {student.status.toUpperCase()}
+                              </Badge>
+                              {!student.hasDocument && (
+                                <Badge bg="secondary" className="ms-1">Sin documento</Badge>
+                              )}
+                            </div>
+                            <small className="text-muted">
+                              Última modificación: {student.lastModified}
+                            </small>
+                          </div>
 
-                      {/* Comments */}
-                      <div className="w-100 w-md-25">
-                        <Form.Control
-                          as="textarea"
-                          placeholder="Comentarios"
-                          style={{ height: "80px", resize: "none" }}
-                          value={comments[student.id] || getDefaultComment(student.status)}
-                          onChange={(e) => handleCommentChange(student.id, e.target.value)}
-                          onBlur={() => saveComment(student.id)}
-                        />
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </ListGroup.Item>
-              ))
-            )}
-          </ListGroup>
+                          {/* Download/Upload */}
+                          <div className="text-center me-4">
+                            <small className="d-block fw-bold text-secondary">DESCARGAR</small>
+                            <div className="d-flex gap-2 justify-content-center">
+                              <Button 
+                                variant={student.hasDocument ? "outline-success" : "outline-secondary"}
+                                disabled={!student.hasDocument}
+                                onClick={() => handleDownload(student)}
+                              >
+                                ⬇️
+                              </Button>
+                            </div>
+                            <small className="d-block fw-bold text-secondary mt-2">SUBIR</small>
+                            <div className="d-flex gap-2 justify-content-center">
+                              <Button 
+                                variant="outline-success"
+                                onClick={() => handleUpload(student)}
+                              >
+                                ⬆️
+                              </Button>
+                            </div>
+                          </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="d-flex justify-content-center">
-              <Button 
-                variant="outline-secondary" 
-                size="sm" 
-                className="mx-1"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(currentPage - 1)}
-              >
-                ⬅️ Anterior
-              </Button>
-              
-              {[...Array(totalPages)].map((_, index) => (
-                <Button 
-                  key={index + 1}
-                  variant={currentPage === index + 1 ? "success" : "outline-secondary"}
-                  size="sm" 
-                  className="mx-1"
-                  onClick={() => setCurrentPage(index + 1)}
-                >
-                  {index + 1}
-                </Button>
-              ))}
-              
-              <Button 
-                variant="outline-secondary" 
-                size="sm" 
-                className="mx-1"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(currentPage + 1)}
-              >
-                Siguiente ➡️
-              </Button>
-            </div>
+                          {/* Approve/Disapprove */}
+                          <div className="text-center me-4">
+                            <small className="d-block fw-bold text-secondary">APROBADO</small>
+                            <div className="d-flex gap-2 justify-content-center">
+                              <Button 
+                                variant={student.status === "aprobado" ? "success" : "outline-success"}
+                                onClick={() => handleStatusChange(student.id, "aprobado")}
+                              >
+                                ✅
+                              </Button>
+                            </div>
+                            <small className="d-block fw-bold text-secondary mt-2">DESAPROBADO</small>
+                            <div className="d-flex gap-2 justify-content-center">
+                              <Button 
+                                variant={student.status === "desaprobado" ? "danger" : "outline-danger"}
+                                onClick={() => handleStatusChange(student.id, "desaprobado")}
+                              >
+                                ❌
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Comments */}
+                          <div className="w-100 w-md-25">
+                            <Form.Control
+                              as="textarea"
+                              placeholder="Comentarios"
+                              style={{ height: "80px", resize: "none" }}
+                              value={comments[student.id] || getDefaultComment(student.status)}
+                              onChange={(e) => handleCommentChange(student.id, e.target.value)}
+                              onBlur={() => saveComment(student.id)}
+                            />
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </ListGroup.Item>
+                  ))
+                )}
+              </ListGroup>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="d-flex justify-content-center">
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    className="mx-1"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    ⬅️ Anterior
+                  </Button>
+                  
+                  {[...Array(totalPages)].map((_, index) => (
+                    <Button 
+                      key={index + 1}
+                      variant={currentPage === index + 1 ? "success" : "outline-secondary"}
+                      size="sm" 
+                      className="mx-1"
+                      onClick={() => setCurrentPage(index + 1)}
+                    >
+                      {index + 1}
+                    </Button>
+                  ))}
+                  
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    className="mx-1"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    Siguiente ➡️
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </Col>
       </Row>
