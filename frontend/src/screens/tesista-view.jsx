@@ -9,23 +9,29 @@ import asesor from "../assets/asesor.webp";
 
 // Icono para representar un archivo genérico
 const fileIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-file-earmark-text me-2" viewBox="0 0 16 16">
-    <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
-    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    fill="currentColor"
+    className="bi bi-file-earmark-text me-2"
+    viewBox="0 0 16 16"
+  >
+    <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z" />
+    <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z" />
   </svg>
 );
 
 // El componente ahora es funcional y usa Hooks (useState, useEffect)
 export default function TesistaView() {
-  
   // --- CAMBIO 1: Creamos un objeto fijo para el grupo del tesista y eliminamos el estado 'grupos' ---
   const grupoFijoParaTesista = {
-      _id: 'grupo_tesista_fijo', // ID de placeholder
-      grupo: 'Grupo 1',
-      // Este es el ID de la carpeta de Drive que especificaste
-      carpeta_grupo_id: '1vKQOc4cWIV4yEvNYoCiaGyl_XvKbjw_q' 
+    _id: "grupo_tesista_fijo", // ID de placeholder
+    grupo: "Grupo 1",
+    // Este es el ID de la carpeta de Drive que especificaste
+    carpeta_grupo_id: "1vKQOc4cWIV4yEvNYoCiaGyl_XvKbjw_q",
   };
-  
+
   // --- Estados del componente ---
   const [usuario] = useState({ rol: localStorage.getItem("userRole") });
   const [files, setFiles] = useState([]);
@@ -33,14 +39,14 @@ export default function TesistaView() {
   const [grupoSeleccionado] = useState(grupoFijoParaTesista);
 
   // --- NUEVO ESTADO PARA FILTRO ---
-  const [filtroProceso, setFiltroProceso] = useState(""); 
+  const [filtroProceso, setFiltroProceso] = useState("");
 
   // Estados para la lógica de duplicado
   const [formularios, setFormularios] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  
+
   // Estado para alertas y mensajes al usuario
   const [alertMsg, setAlertMsg] = useState("");
 
@@ -51,14 +57,14 @@ export default function TesistaView() {
     if (token) {
       getFiles();
     } else {
-        setAlertMsg("Inicia sesión con Google para ver tus archivos.");
+      setAlertMsg("Inicia sesión con Google para ver tus archivos.");
     }
   }, [token]); // Se ejecuta solo cuando el token cambie
 
   // Función para obtener los archivos del grupo
   const getFiles = async () => {
     // La función ahora usa directamente el 'grupoSeleccionado' que es nuestro objeto fijo
-    if (!grupoSeleccionado || !token) return; 
+    if (!grupoSeleccionado || !token) return;
     try {
       const res = await axios.get(
         `http://localhost:4000/api/drive/files?folderId=${grupoSeleccionado.carpeta_grupo_id}`,
@@ -78,9 +84,12 @@ export default function TesistaView() {
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:4000/api/drive/formularios`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `http://localhost:4000/api/drive/formularios`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       setFormularios(res.data);
       return res.data;
     } catch (err) {
@@ -89,14 +98,16 @@ export default function TesistaView() {
       return [];
     }
   };
-  
+
   // Abre el modal de confirmación después de cargar los formularios (sin cambios)
   const confirmDuplicarFormularios = async () => {
     const formulariosObtenidos = await getFormularios();
     if (formulariosObtenidos.length > 0) {
-        setShowModal(true);
+      setShowModal(true);
     } else {
-        setAlertMsg("No se encontraron formularios para duplicar o hubo un error al cargarlos.");
+      setAlertMsg(
+        "No se encontraron formularios para duplicar o hubo un error al cargarlos."
+      );
     }
   };
 
@@ -147,9 +158,19 @@ export default function TesistaView() {
           className="bg-success text-white min-vh-100 p-3"
         >
           <div className="text-center mb-4">
-            <img src={logoUniversidad} className="img-fluid mb-2" alt="Logo Universidad" style={{ maxWidth: "150px" }}/>
+            <img
+              src={logoUniversidad}
+              className="img-fluid mb-2"
+              alt="Logo Universidad"
+              style={{ maxWidth: "150px" }}
+            />
             <h4 className="fw-bold"> TITES </h4>
-            <img src={asesor} className="img-fluid mb-2" alt="Foto Asesor" style={{ maxWidth: "150px", borderRadius: "50%", marginTop: 35 }}/>
+            <img
+              src={asesor}
+              className="img-fluid mb-2"
+              alt="Foto Asesor"
+              style={{ maxWidth: "150px", borderRadius: "50%", marginTop: 35 }}
+            />
             <div className="mt-5">
               <h5>{usuario?.rol || "Rol"}</h5>
               <small>{usuario?.rol ? "USUARIO:" + usuario.rol : "Rol"}</small>
@@ -163,18 +184,21 @@ export default function TesistaView() {
             <Button variant="outline-light">Metadatos</Button>
           </div>
           <div className="mt-5 text-center">
-            <Button variant="outline-light" size="sm" as={Link} to="/">Salir</Button>
+            <Button variant="outline-light" size="sm" as={Link} to="/">
+              Salir
+            </Button>
           </div>
         </Col>
 
         {/* --- Área de Contenido Principal (Refactorizada) --- */}
         <Col md={9} className="p-4">
-          
           {/* Fila de Controles Superiores */}
           <Row className="mb-4 align-items-center">
             <Col>
               {/* --- CAMBIO 4: Reemplazamos el selector por un título fijo --- */}
-              <h3>Archivos de tu Grupo: <strong>{grupoSeleccionado.grupo}</strong></h3>
+              <h3>
+                Archivos de tu Grupo: <strong>{grupoSeleccionado.grupo}</strong>
+              </h3>
             </Col>
             <Col className="d-flex justify-content-end gap-2">
               {/* --- NUEVO SELECTOR SOLO PARA TESTEAR PROYECTO --- */}
@@ -186,73 +210,105 @@ export default function TesistaView() {
               >
                 <option value="">-- Selecciona una opción --</option>
                 <option value="">Registrar Proyecto de Tesis</option>
-                <option value="F.TITES 006">Testear Proyecto en Turnitin</option>
+                <option value="F.TITES 006">
+                  Testear Proyecto en Turnitin
+                </option>
                 <option value="">Asesoría Semanal</option>
                 <option value="">Solicitar Revisión Final</option>
                 <option value="">Revisión Final</option>
                 <option value="">Cambiar Tesis</option>
-
               </Form.Select>
 
               {/* Botón para Duplicar Formularios, ahora siempre actúa sobre el grupo fijo */}
-              <Button variant="outline-warning" size="sm" onClick={confirmDuplicarFormularios} disabled={files.length > 0} >
+              <Button
+                variant="outline-warning"
+                size="sm"
+                onClick={confirmDuplicarFormularios}
+                disabled={files.length > 0}
+              >
                 Cargar Formularios a mi Grupo
               </Button>
             </Col>
           </Row>
 
           {alertMsg && (
-            <div className="alert alert-warning alert-dismissible fade show" role="alert">
+            <div
+              className="alert alert-warning alert-dismissible fade show"
+              role="alert"
+            >
               {alertMsg}
-              <button type="button" className="btn-close" onClick={() => setAlertMsg("")}></button>
+              <button
+                type="button"
+                className="btn-close"
+                onClick={() => setAlertMsg("")}
+              ></button>
             </div>
-           )}
+          )}
 
           {/* Listado de Archivos con diseño de tarjetas */}
           <div className="row">
             {files.length > 0 ? (
               files
-              .filter(file => {
-                if (!file.name.includes("F.TITES")) return false;
-                if (filtroProceso) {
-                  return file.name.includes(filtroProceso);
-                }
-                return true; // mostrar todos si no hay filtro
-              })
-              .map((file) => (
-                <div className="col-md-12 p-2" key={file.id}>
-                  <Card className="mb-3">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
-                          {fileIcon}
-                          <div>
-                              <h5 className="mb-0">{file.name.replace(/^Copia de /i, "").replace(/\.docx$/i, "")}</h5>
-                              <small className="text-muted">{file.mimeType}</small>
+                .filter((file) => {
+                  if (!file.name.includes("F.TITES")) return false;
+                  if (filtroProceso) {
+                    return file.name.includes(filtroProceso);
+                  }
+                  return true; // mostrar todos si no hay filtro
+                })
+                .map((file) => (
+                  <div className="col-md-12 p-2" key={file.id}>
+                    <Card className="mb-3">
+                      <Card.Body>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center">
+                            {fileIcon}
+                            <div>
+                              <h5 className="mb-0">
+                                {file.name
+                                  .replace(/^Copia de /i, "")
+                                  .replace(/\.docx$/i, "")}
+                              </h5>
+                              <small className="text-muted">
+                                {file.mimeType}
+                              </small>
+                            </div>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              href={`https://docs.google.com/document/d/${file.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Abrir
+                            </Button>
+                            <Button
+                              variant="outline-success"
+                              size="sm"
+                              onClick={() => {
+                                setArchivoSeleccionado({
+                                  name: file.name,
+                                  estado: "Rechazado",
+                                  comentarios: "Sin observaciones.",
+                                });
+                                setShowEstadoModal(true);
+                              }}
+                            >
+                              Ver Estado
+                            </Button>
                           </div>
                         </div>
-                        <div className="d-flex gap-2">
-                          <Button variant="outline-primary" size="sm" href={`https://docs.google.com/document/d/${file.id}`} target="_blank" rel="noopener noreferrer">
-                            Abrir
-                          </Button>
-                          <Button variant="outline-success" size="sm" onClick={() => {
-                            setArchivoSeleccionado({
-                              name: file.name,
-                              estado: "Rechazado",
-                              comentarios: "Sin observaciones."
-                            });
-                            setShowEstadoModal(true);
-                          }}>
-                            Ver Estado
-                          </Button>
-                        </div>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </div>
-              ))
+                      </Card.Body>
+                    </Card>
+                  </div>
+                ))
             ) : (
-              <p>No se encontraron archivos en tu grupo. Puedes cargar los formularios base con el botón de arriba.</p>
+              <p>
+                No se encontraron archivos en tu grupo. Puedes cargar los
+                formularios base con el botón de arriba.
+              </p>
             )}
           </div>
         </Col>
@@ -260,31 +316,56 @@ export default function TesistaView() {
 
       {/* --- Modal de Confirmación para Duplicar (sin cambios) --- */}
       {showModal && (
-        <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal show fade d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Confirmar Carga de Formularios</h5>
                 {!isDuplicating && (
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowModal(false)}
+                  ></button>
                 )}
               </div>
               <div className="modal-body">
                 {isDuplicating ? (
                   <div className="d-flex align-items-center">
-                    <div className="spinner-border text-warning me-3" role="status" />
+                    <div
+                      className="spinner-border text-warning me-3"
+                      role="status"
+                    />
                     <span>Cargando archivos, por favor espera...</span>
                   </div>
                 ) : (
                   <p>
-                    ¿Estás seguro de que deseas cargar <strong>todos los formularios base</strong> a la carpeta de tu grupo <strong>{grupoSeleccionado?.grupo}</strong>?
+                    ¿Estás seguro de que deseas cargar{" "}
+                    <strong>todos los formularios base</strong> a la carpeta de
+                    tu grupo <strong>{grupoSeleccionado?.grupo}</strong>?
                   </p>
                 )}
               </div>
               {!isDuplicating && (
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                  <button type="button" className="btn btn-warning" onClick={handleDuplicarConfirmado}>Confirmar Carga</button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-warning"
+                    onClick={handleDuplicarConfirmado}
+                  >
+                    Confirmar Carga
+                  </button>
                 </div>
               )}
             </div>
@@ -294,42 +375,67 @@ export default function TesistaView() {
 
       {/* --- Modal Estado y Correcciones --- */}
       {showEstadoModal && archivoSeleccionado && (
-        <div className="modal show fade d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <div
+          className="modal show fade d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Estado del Formulario</h5>
-                <button type="button" className="btn-close" onClick={() => setShowEstadoModal(false)}></button>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowEstadoModal(false)}
+                ></button>
               </div>
               <div className="modal-body">
-                <p><strong>Archivo:</strong> {archivoSeleccionado.name}</p>
-                <p><strong>Estado:</strong> 
-                  <span className={
-                    archivoSeleccionado.estado === "Aprobado" ? "text-success fw-bold" :
-                    archivoSeleccionado.estado === "Rechazado" ? "text-danger fw-bold" :
-                    "text-warning fw-bold"
-                  }>
+                <p>
+                  <strong>Archivo:</strong> {archivoSeleccionado.name}
+                </p>
+                <p>
+                  <strong>Estado:</strong>
+                  <span
+                    className={
+                      archivoSeleccionado.estado === "Aprobado"
+                        ? "text-success fw-bold"
+                        : archivoSeleccionado.estado === "Rechazado"
+                        ? "text-danger fw-bold"
+                        : "text-warning fw-bold"
+                    }
+                  >
                     {archivoSeleccionado.estado}
                   </span>
                 </p>
-                <p><strong>Correcciones:</strong></p>
+                <p>
+                  <strong>Correcciones:</strong>
+                </p>
                 <div className="border p-2 rounded bg-light">
                   {archivoSeleccionado.comentarios}
                 </div>
               </div>
               <div className="modal-footer">
-                <Button variant="secondary" onClick={() => setShowEstadoModal(false)}>Cerrar</Button>
-                {archivoSeleccionado.estado === "Rechazado" && ( // En caso de Rechazo se pide otra revision
-                <Button variant="primary" onClick={() => {setArchivoSeleccionado({
-                      ...archivoSeleccionado,
-                      estado: "Pendiente",
-                      comentarios: "Se ha solicitado una nueva revisión.",
-                    });
-                  }}
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowEstadoModal(false)}
                 >
-                  Pedir otra aprobación
+                  Cerrar
                 </Button>
-              )}
+                {archivoSeleccionado.estado === "Rechazado" && ( // En caso de Rechazo se pide otra revision
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setArchivoSeleccionado({
+                        ...archivoSeleccionado,
+                        estado: "Pendiente",
+                        comentarios: "Se ha solicitado una nueva revisión.",
+                      });
+                    }}
+                  >
+                    Pedir otra aprobación
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -338,13 +444,23 @@ export default function TesistaView() {
 
       {/* --- Toast de Notificación (sin cambios) --- */}
       {showToast && (
-        <div className="toast-container position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1055 }}>
+        <div
+          className="toast-container position-fixed bottom-0 end-0 p-3"
+          style={{ zIndex: 1055 }}
+        >
           <div className="toast show bg-success text-white">
             <div className="toast-header">
               <strong className="me-auto">Carga completa</strong>
-              <button type="button" className="btn-close btn-close-white" onClick={() => setShowToast(false)}></button>
+              <button
+                type="button"
+                className="btn-close btn-close-white"
+                onClick={() => setShowToast(false)}
+              ></button>
             </div>
-            <div className="toast-body">Los formularios se cargaron correctamente en la carpeta de tu grupo.</div>
+            <div className="toast-body">
+              Los formularios se cargaron correctamente en la carpeta de tu
+              grupo.
+            </div>
           </div>
         </div>
       )}
