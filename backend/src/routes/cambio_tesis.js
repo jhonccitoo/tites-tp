@@ -33,6 +33,7 @@ router.post('/broadcast', async (req, res) => {
       groupFolderId,
       groupName,
       tipo,
+      tesisId,
       motivo,
       tesistaFullName,
     } = req.body || {};
