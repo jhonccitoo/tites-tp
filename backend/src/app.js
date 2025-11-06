@@ -21,12 +21,14 @@ const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth"); // Importa la ruta de autenticación
 const notesRouter = require("./routes/notes"); // !!! IMPORTA EL ENRUTADOR DE NOTAS !!!
 const driveRouter = require("./routes/drive");
+const cambiorouter = require("./routes/cambio_tesis");
 //const carpetasRoutes = require('./routes/carpetas'); //prueba carpetas
 
 app.use("/api/users", usersRouter);
 app.use("/api/auth", authRouter); // Usa el prefijo /api/auth para las rutas de autenticación
 app.use("/api/notes", notesRouter); // !!! MONTA EL ENRUTADOR DE NOTAS EN LA RUTA /api/notes !!!
 app.use("/api/drive", driveRouter);
+app.use("/api/cambios", cambiorouter);
 //app.use('/api/carpetas', carpetasRoutes); //prueba carpetas
 
 module.exports = app;
