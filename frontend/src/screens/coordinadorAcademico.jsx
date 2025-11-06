@@ -10,11 +10,14 @@ import {
   Badge,
   Dropdown,
   Spinner,
-  Modal, // Importamos Modal para el 'Ver Estado'
+  Modal,
 } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-// Icono para representar un archivo genérico (Copiado de TesistaView)
+// --- URL de Turnitin (ACTUALIZADA con el nuevo enlace) ---
+const TURNITIN_URL = "https://www.turnitin.com/login_page.asp?lang=es";
+
+// --- INICIO: Icono de Archivo (Necesario para F.TITES 005) ---
 const fileIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -28,6 +31,7 @@ const fileIcon = (
     <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z" />
   </svg>
 );
+// --- FIN: Icono de Archivo ---
 
 function CoordinadorAcademicoView() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,68 +39,79 @@ function CoordinadorAcademicoView() {
   const [loading, setLoading] = useState(false);
   const [tesis, setTesis] = useState([]);
 
-  // --- NUEVOS ESTADOS DEL TESISTA VIEW ---
+  // --- Estados para el Modal ---
   const [showEstadoModal, setShowEstadoModal] = useState(false);
   const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
-  // ----------------------------------------
+
+  // --- ID DEL DOCUMENTO BASE ---
+  const ID_ESTATICO_FTITES_005 = "1b1ah_2VkZTOYcu1bqaQPYx1x2f3esqeR";
+  // ------------------------------
 
   const fileInputRef = useRef(null);
   const pendingUploadRef = useRef({ folderId: null, rowId: null });
 
-  const token = localStorage.getItem("googleToken");
-
-  // Load Drive data from backend on mount
+  // Load Drive data from backend on mount (LÓGICA ORIGINAL)
   useEffect(() => {
     const fetchGroups = async () => {
       try {
+        const token = localStorage.getItem("googleToken");
         if (!token) return;
         setLoading(true);
 
-        // *** CAMBIO CLAVE: Usamos un endpoint que trae TODOS los F.TITES de TODOS los grupos ***
-        // Asumiendo que este endpoint devuelve: [{ groupName, groupFolderId, groupWebLink, files: [{ id, name, modifiedTime, webViewLink, mimeType }] }]
-        const r = await fetch("/api/drive/coordinador-academico/all-files", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const r = await fetch(
+          "/api/drive/coordinador-academico/tesis007/groups",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const data = await r.json();
 
         const rows = [];
         (data || []).forEach((group) => {
-          // Filtramos solo archivos cuyo nombre contiene 'F.TITES'
-          const fTitesFiles = (group.files || []).filter((f) =>
-            f.name.includes("F.TITES")
-          );
-
-          if (fTitesFiles.length) {
-            fTitesFiles.forEach((f) => {
+          if (group.files && group.files.length) {
+            group.files.forEach((f) => {
               const dt = f.modifiedTime ? new Date(f.modifiedTime) : null;
               rows.push({
-                // Generamos un ID único que incluya el nombre del archivo, pues el ID de Drive es el mismo si es un archivo
-                id: f.id + f.name,
-                driveFileId: f.id, // Guardamos el ID real de Drive
+                id: f.id,
                 nombre: group.groupName,
                 rol: "Tesista",
                 fecha: dt ? dt.toISOString().slice(0, 10) : "",
                 hora: dt ? dt.toTimeString().slice(0, 5) : "",
                 driveUrl: f.webViewLink,
-                estado: "pendiente", // El estado ahora aplica al archivo
+                estado: "pendiente",
                 comentarios: "",
                 ultima: dt ? dt.toISOString().slice(0, 10) : "",
-                fileName: f.name
-                  .replace(/^Copia de /i, "")
-                  .replace(/\.docx$/i, ""), // Limpiamos el nombre
+                fileName: f.name,
                 groupFolderId: group.groupFolderId,
                 groupWebLink: group.groupWebLink,
+                has007: true,
                 mimeType: f.mimeType,
-                // Identificador para el tipo de formulario
-                formType: f.name.match(/F\.TITES\s\d+/i)?.[0] || "F.TITES",
               });
+            });
+          } else {
+            // no F.TITES 007 file — add placeholder row
+            rows.push({
+              id: `no-007-${group.groupFolderId}`,
+              nombre: group.groupName,
+              rol: "Tesista",
+              fecha: "",
+              hora: "",
+              driveUrl: group.groupWebLink,
+              estado: "pendiente",
+              comentarios: "",
+              ultima: "",
+              fileName: "No tiene documento F.TITES 007",
+              groupFolderId: group.groupFolderId,
+              groupWebLink: group.groupWebLink,
+              has007: false,
+              mimeType: null,
             });
           }
         });
 
         setTesis(rows);
       } catch (e) {
-        console.error("Drive files fetch failed:", e);
+        console.error("Drive groups fetch failed:", e);
         setTesis([]);
       } finally {
         setLoading(false);
@@ -104,9 +119,9 @@ function CoordinadorAcademicoView() {
     };
 
     fetchGroups();
-  }, [token]);
+  }, []);
 
-  // Search + filter
+  // Search + filter (LÓGICA ORIGINAL)
   const filtered = useMemo(() => {
     return tesis.filter((t) => {
       const bySearch =
@@ -118,6 +133,7 @@ function CoordinadorAcademicoView() {
     });
   }, [tesis, searchTerm, statusFilter]);
 
+  // LÓGICA ORIGINAL
   const badgeEstado = (estado) => {
     if (estado === "pendiente")
       return (
@@ -129,66 +145,62 @@ function CoordinadorAcademicoView() {
     return <Badge bg="danger">DESAPROBADO</Badge>;
   };
 
+  // LÓGICA ORIGINAL
   const setEstado = (id, nuevo) => {
     setTesis((prev) =>
       prev.map((t) => (t.id === id ? { ...t, estado: nuevo } : t))
     );
-    // Opcional: Cerrar modal si se actualiza el estado desde los botones de la tarjeta
-    if (archivoSeleccionado && archivoSeleccionado.id === id) {
-      setArchivoSeleccionado((prev) => ({ ...prev, estado: nuevo }));
-    }
   };
 
+  // LÓGICA ORIGINAL
   const setComentario = (id, value) => {
     setTesis((prev) =>
       prev.map((t) => (t.id === id ? { ...t, comentarios: value } : t))
     );
   };
 
-  // Función para abrir el modal con el estado (copiado de TesistaView)
-  const openEstadoModal = (fileData) => {
-    // Usamos los datos actuales de la fila (t) para simular el estado
-    setArchivoSeleccionado({
-      id: fileData.id,
-      name: fileData.fileName,
-      estado: fileData.estado[0].toUpperCase() + fileData.estado.slice(1), // Capitalizar
-      comentarios: fileData.comentarios || "Sin comentarios del coordinador.",
-      // Añadir el driveFileId para el botón de 'Abrir'
-      driveFileId: fileData.driveFileId,
-    });
-    setShowEstadoModal(true);
-  };
-
-  // Download via backend stream
-  const descargar = async (fileId, suggestedName) => {
+  // --- FUNCIÓN DESCARGAR (SOLO PARA F.TITES 007 - Mantiene lógica de API) ---
+  const descargar = async (fileId, suggestedName = "F.TITES_007") => {
     try {
       const token = localStorage.getItem("googleToken");
+
+      // 1. Iniciamos la solicitud de descarga
       const res = await fetch(
-        `/api/drive/coordinador-academico/file/${fileId}/download`, // Modificado para un archivo general
+        `/api/drive/coordinador-academico/tesis007/${fileId}/download`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!res.ok) throw new Error("Download failed");
+
+      if (!res.ok) {
+        throw new Error("Download failed or file not found on Drive");
+      }
+
+      // 2. Procesa la descarga en el navegador
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `${suggestedName}`;
+      a.download = suggestedName.endsWith(".docx")
+        ? suggestedName
+        : `${suggestedName}`;
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (e) {
       console.error("Descarga falló:", e);
-      alert("No se pudo descargar el archivo.");
+      alert(
+        "No se pudo descargar el archivo F.TITES 007. Revisa la consola para más detalles (ej: Token expirado)."
+      );
     }
   };
+  // -------------------------------------------------------------------------
 
-  // Open file picker to upload F7 (se mantiene solo por si se usa para subir correcciones)
+  // Open file picker to upload F7 into the GROUP folder (LÓGICA ORIGINAL)
   const abrirSelector = (row) => {
     pendingUploadRef.current = { folderId: row.groupFolderId, rowId: row.id };
     if (fileInputRef.current) fileInputRef.current.value = "";
     fileInputRef.current?.click();
   };
 
+  // LÓGICA ORIGINAL
   const onFilePicked = async (e) => {
-    // ... Lógica de subida de archivos (se mantiene igual, asumiendo que es para subir un F7 o corrección) ...
     const file = e.target.files?.[0];
     const { folderId } = pendingUploadRef.current || {};
     if (!file || !folderId) return;
@@ -207,19 +219,21 @@ function CoordinadorAcademicoView() {
       );
       if (!r.ok) throw new Error("Upload failed");
       await r.json();
-      alert("Archivo subido correctamente."); // Cambiado de 'Formulario 7' a 'Archivo'
+      alert("Formulario 7 subido correctamente.");
     } catch (err) {
-      console.error("Error subiendo archivo:", err);
-      alert("No se pudo subir el archivo.");
+      console.error("Error subiendo F7:", err);
+      alert("No se pudo subir el Formulario 7.");
     } finally {
       pendingUploadRef.current = { folderId: null, rowId: null };
     }
   };
 
+  const token = localStorage.getItem("googleToken");
+
   return (
     <Container fluid className="p-0">
       <Row className="g-0">
-        {/* Sidebar */}
+        {/* Sidebar (LÓGICA ORIGINAL) */}
         <Col
           md={2}
           className="bg-success d-flex flex-column align-items-center text-white py-4"
@@ -243,7 +257,7 @@ function CoordinadorAcademicoView() {
               className="w-100 mb-2 text-start fw-semibold"
               active
             >
-              Formularios Tesistas
+              F. TITES 007
             </Button>
           </div>
 
@@ -254,7 +268,7 @@ function CoordinadorAcademicoView() {
           </div>
         </Col>
 
-        {/* Main */}
+        {/* Main (LÓGICA ORIGINAL) */}
         <Col md={10} className="bg-light px-4 py-3">
           {!token && (
             <Card className="mb-3 border-warning">
@@ -266,7 +280,7 @@ function CoordinadorAcademicoView() {
 
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="fw-bold mb-0">
-              Gestión de Formularios F. TITES{" "}
+              F. TITES 007{" "}
               {loading && (
                 <Spinner animation="border" size="sm" className="ms-2" />
               )}
@@ -283,19 +297,19 @@ function CoordinadorAcademicoView() {
 
           <Card className="mb-3 shadow-sm">
             <Card.Body className="text-muted">
-              Se listan todos los documentos cuyo nombre{" "}
-              <strong>empieza</strong> con <strong>“F.TITES”</strong> de cada
-              grupo de tesistas.
+              Se listan archivos cuyo nombre <strong>empieza</strong> con{" "}
+              <strong>“F.TITES 007”</strong>, directamente dentro de cada
+              carpeta de grupo.
             </Card.Body>
           </Card>
 
-          {/* Filters */}
+          {/* Filters (LÓGICA ORIGINAL) */}
           <Row className="align-items-center mb-2 g-2">
             <Col md={6}>
               <InputGroup>
                 <InputGroup.Text>🔎</InputGroup.Text>
                 <Form.Control
-                  placeholder="Buscar por grupo, nombre de archivo o tipo de F.TITES…"
+                  placeholder="Buscar por grupo o nombre de archivo…"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -323,26 +337,18 @@ function CoordinadorAcademicoView() {
             </Col>
           </Row>
 
-          {/* Cards */}
+          {/* Cards (LÓGICA ORIGINAL) */}
           {filtered.map((t) => (
             <Card key={t.id} className="mb-3 shadow-sm">
               <Card.Body>
                 <Row className="align-items-center g-3">
                   <Col lg={4}>
-                    <div className="d-flex align-items-center mb-2">
-                      {fileIcon}
-                      <div
-                        className="fw-bold"
-                        style={{ letterSpacing: ".4px" }}
-                      >
-                        {t.fileName}
-                      </div>
+                    <div className="fw-bold" style={{ letterSpacing: ".4px" }}>
+                      {t.nombre}
                     </div>
-                    <div className="text-muted small ms-4">
-                      Grupo: <span className="fw-bold">{t.nombre}</span>
-                    </div>
-                    <div className="mt-2 ms-4">{badgeEstado(t.estado)}</div>
-                    <div className="text-muted small mt-2 ms-4">
+                    <div className="text-muted small">{t.fileName}</div>
+                    <div className="mt-2">{badgeEstado(t.estado)}</div>
+                    <div className="text-muted small mt-2">
                       {t.ultima ? (
                         <>
                           Última modificación: {t.ultima}
@@ -352,77 +358,71 @@ function CoordinadorAcademicoView() {
                         "Sin fecha"
                       )}
                     </div>
+                    <div className="mt-2">
+                      <a
+                        href={t.groupWebLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="small"
+                      >
+                        Abrir carpeta del grupo ▸
+                      </a>
+                    </div>
                   </Col>
 
                   <Col lg={2} className="d-flex flex-column align-items-center">
-                    <div className="text-muted small mb-1">ACCIONES</div>
-                    <Button
-                      variant="outline-primary"
-                      size="sm"
-                      href={t.driveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mb-2 w-100"
-                    >
-                      Abrir Doc. Drive
-                    </Button>
+                    <div className="text-muted small mb-1">DESCARGAR</div>
                     <Button
                       variant="outline-secondary"
-                      size="sm"
-                      onClick={() => descargar(t.driveFileId, t.fileName)}
-                      disabled={!t.driveFileId}
-                      className="mb-2 w-100"
+                      onClick={() => t.has007 && descargar(t.id, t.fileName)}
+                      disabled={!t.has007}
+                      title={
+                        t.has007
+                          ? "Descargar"
+                          : "No tiene documento F.TITES 007"
+                      }
                     >
-                      ⬇️ Descargar
+                      ⬇️
                     </Button>
+
+                    <div className="text-muted small mt-3 mb-1">SUBIR F7</div>
                     <Button
-                      variant="outline-success"
-                      size="sm"
-                      onClick={() => openEstadoModal(t)}
-                      className="w-100"
+                      variant="outline-secondary"
+                      onClick={() => abrirSelector(t)}
                     >
-                      Ver Estado (Tesista)
+                      ⬆️
                     </Button>
-                    <a
-                      href={t.groupWebLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="small mt-2"
-                    >
-                      Abrir carpeta del grupo ▸
-                    </a>
                   </Col>
 
                   <Col lg={2} className="d-flex flex-column align-items-center">
-                    <div className="text-muted small mb-1">
-                      APROBAR/RECHAZAR
-                    </div>
+                    <div className="text-muted small mb-1">APROBADO</div>
                     <Button
                       variant={
                         t.estado === "aprobado" ? "success" : "outline-success"
                       }
                       onClick={() => setEstado(t.id, "aprobado")}
-                      className="mb-2 w-100"
                     >
-                      ✅ Aprobar
+                      ✅
                     </Button>
 
+                    <div className="text-muted small mt-3 mb-1">
+                      DESAPROBADO
+                    </div>
                     <Button
                       variant={
                         t.estado === "desaprobado" ? "danger" : "outline-danger"
                       }
                       onClick={() => setEstado(t.id, "desaprobado")}
-                      className="w-100"
                     >
-                      ❌ Rechazar
+                      ❌
                     </Button>
                   </Col>
 
                   <Col lg={4}>
                     <Form.Control
                       as="textarea"
-                      rows={4} // Aumentamos el tamaño
-                      placeholder="Comentarios / Correcciones Oficiales"
+                      rows={3}
+                      placeholder="Comentarios"
                       value={t.comentarios}
                       onChange={(e) => setComentario(t.id, e.target.value)}
                     />
@@ -432,18 +432,88 @@ function CoordinadorAcademicoView() {
             </Card>
           ))}
 
-          {/* hidden input for uploads */}
+          {/* --- INICIO: DOCUMENTO ESTATICO F.TITES 005 (Botones con redirección prioritaria) --- */}
+          <Card
+            key="static-ftites005"
+            className="mb-3 shadow-sm border-secondary"
+          >
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center">
+                <div className="d-flex align-items-center">
+                  {fileIcon}
+                  <div>
+                    <h5 className="mb-0">
+                      F.TITES 005 Inscripción y Registro del Proyecto de Tesis
+                    </h5>
+                    <small className="text-muted">
+                      application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                    </small>
+                  </div>
+                </div>
+                <div className="d-flex gap-2">
+                  {/* Botón Descargar: Abre Turnitin primero, luego descarga */}
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => {
+                      const downloadUrl = `https://docs.google.com/document/d/${ID_ESTATICO_FTITES_005}/export?format=docx`;
+
+                      // 1. Abrir Turnitin inmediatamente (la acción principal del click)
+                      window.open(TURNITIN_URL, "_blank");
+
+                      // 2. Iniciar la descarga del archivo 005 (100ms después)
+                      setTimeout(() => {
+                        window.open(downloadUrl, "_self");
+                      }, 100);
+                    }}
+                    title="Descargar la plantilla F.TITES 005 y abrir Turnitin"
+                  >
+                    Descargar
+                  </Button>
+                  {/* Botón Abrir (Existente) */}
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    href={`https://docs.google.com/document/d/${ID_ESTATICO_FTITES_005}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Abrir
+                  </Button>
+                  {/* Botón Ver Estado (Existente) */}
+                  <Button
+                    variant="outline-success"
+                    size="sm"
+                    onClick={() => {
+                      setArchivoSeleccionado({
+                        name: "F.TITES 005 Inscripción y Registro del Proyecto de Tesis",
+                        estado: "Rechazado", // Estado de ejemplo
+                        comentarios: "Sin observaciones (Ejemplo Estático).", // Comentario de ejemplo
+                        driveFileId: ID_ESTATICO_FTITES_005, // ID real
+                      });
+                      setShowEstadoModal(true);
+                    }}
+                  >
+                    Ver Estado
+                  </Button>
+                </div>
+              </div>
+            </Card.Body>
+          </Card>
+          {/* --- FIN DOCUMENTO ESTATICO F.TITES 005 SOLICITADO --- */}
+
+          {/* hidden input for uploads (LÓGICA ORIGINAL) */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            accept="application/pdf"
             style={{ display: "none" }}
             onChange={onFilePicked}
           />
         </Col>
       </Row>
 
-      {/* --- Modal Estado y Correcciones (Copiado de TesistaView) --- */}
+      {/* --- INICIO: Modal copiado de TesistaView --- */}
       {showEstadoModal && archivoSeleccionado && (
         <Modal
           show={showEstadoModal}
@@ -451,7 +521,7 @@ function CoordinadorAcademicoView() {
           centered
         >
           <Modal.Header closeButton>
-            <Modal.Title>Estado del Formulario (Vista Tesista)</Modal.Title>
+            <Modal.Title>Estado del Formulario (Simulación)</Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <p>
@@ -463,7 +533,7 @@ function CoordinadorAcademicoView() {
                 className={
                   archivoSeleccionado.estado === "Aprobado"
                     ? "text-success fw-bold ms-1"
-                    : archivoSeleccionado.estado === "Desaprobado"
+                    : archivoSeleccionado.estado === "Rechazado"
                     ? "text-danger fw-bold ms-1"
                     : "text-warning fw-bold ms-1"
                 }
@@ -475,9 +545,9 @@ function CoordinadorAcademicoView() {
               <strong>Correcciones:</strong>
             </p>
             <div className="border p-2 rounded bg-light">
-              {archivoSeleccionado.comentarios ||
-                "Sin observaciones registradas."}
+              {archivoSeleccionado.comentarios}
             </div>
+            {/* Botón para abrir el doc en el modal */}
             <div className="mt-3 text-center">
               <Button
                 variant="link"
@@ -498,22 +568,26 @@ function CoordinadorAcademicoView() {
             >
               Cerrar
             </Button>
-            {/* Solo mostramos la opción de 'Pedir otra aprobación' si el tesista lo ha hecho (simulado) */}
-            {archivoSeleccionado.estado === "Desaprobado" && (
+            {/* Lógica de 'Pedir otra aprobación' de TesistaView */}
+            {archivoSeleccionado.estado === "Rechazado" && (
               <Button
                 variant="primary"
                 onClick={() => {
-                  // Simulamos que el tesista pide otra aprobación
-                  setEstado(archivoSeleccionado.id, "pendiente");
-                  setShowEstadoModal(false);
+                  setArchivoSeleccionado({
+                    ...archivoSeleccionado,
+                    estado: "Pendiente",
+                    comentarios:
+                      "Se ha solicitado una nueva revisión (Ejemplo).",
+                  });
                 }}
               >
-                Pedir otra aprobación (Simulación)
+                Pedir otra aprobación
               </Button>
             )}
           </Modal.Footer>
         </Modal>
       )}
+      {/* --- FIN DEL MODAL --- */}
     </Container>
   );
 }
