@@ -28,4 +28,23 @@ router.get('/secretarias', async (req, res) => {
   }
 });
 
+router.post('/mark-paid/:id', async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    user.pagado = true; 
+    await user.save();
+
+    res.json({ message: 'Estado de pago actualizado correctamente', user });
+  } catch (err) {
+    console.error('Error al actualizar estado de pago:', err);
+    res.status(500).json({ message: 'Error al actualizar estado de pago' });
+  }
+});
+
 module.exports = router;

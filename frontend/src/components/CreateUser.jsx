@@ -1,259 +1,346 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function CreateUser() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    // --- ESTADO PRINCIPAL (Registro de Usuario) ---
-    const [nombre, setNombre] = useState('');
-    const [apellido, setApellido] = useState('');
-    const [correoInstitucional, setCorreoInstitucional] = useState('');
-    const [password, setPassword] = useState('');
-    
-    // Estados de Control
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const modalRef = useRef();
+  // --- ESTADOS ---
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [correoInstitucional, setCorreoInstitucional] = useState('');
+  const [usuario, setUsuario] = useState(''); 
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const modalRef = useRef();
 
-    // --- Nota: Eliminado el estado de 'users', 'username', 'role', 'getUsers' y 'deleteUser'
-    // --- ya que esta lógica pertenece a una página de Administración, no a este formulario de registro.
-    // --- Si quieres usar esa lógica, debe ser un componente separado o un archivo distinto.
-    
-    // --- Manejador para cambios en inputs ---
-    const onChangeInput = (e) => {
-        const { name, value } = e.target;
-        setError(null); // Limpiar error al escribir
-        switch (name) {
-            case 'nombre':
-                setNombre(value);
-                break;
-            case 'apellido':
-                setApellido(value);
-                break;
-            case 'correoInstitucional':
-                setCorreoInstitucional(value);
-                break;
-            case 'password':
-                setPassword(value);
-                break;
-            // Eliminados los casos 'username' y 'role' ya que no están en el formulario de registro
-            default:
-                break;
-        }
-    };
+  // --- CAMBIOS EN INPUTS ---
+  const onChangeInput = (e) => {
+    const { name, value } = e.target;
+    setError(null);
+    if (name === 'nombre') setNombre(value);
+    else if (name === 'apellido') setApellido(value);
+    else if (name === 'correoInstitucional') setCorreoInstitucional(value);
+    else if (name === 'usuario') setUsuario(value); 
+    else if (name === 'password') setPassword(value);
+  };
 
-    // --- Manejador para enviar el formulario ---
-    const onSubmit = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(null);
-        
-        // --- VALIDACIONES DE CAMPOS ---
-        const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/;
-        
-        if (!nombre || !regexNombre.test(nombre)) {
-            setError("El nombre solo puede contener letras y tildes.");
-            setIsLoading(false);
-            return;
-        }
-        if (!apellido || !regexNombre.test(apellido)) {
-            setError("El apellido solo puede contener letras y tildes.");
-            setIsLoading(false);
-            return;
-        }
-        const urpRegex = /^[^@\s]+@urp\.edu\.pe$/i;
-        if (!correoInstitucional || !urpRegex.test(correoInstitucional)) {
-            setError("El correo institucional debe ser del dominio @urp.edu.pe.");
-            setIsLoading(false);
-            return;
-        }
-        if (!password) {
-            setError("La contraseña es requerida.");
-            setIsLoading(false);
-            return;
-        }
+  // --- ENVÍO DEL FORMULARIO ---
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-        // --- LLAMADA A LA API ---
-        try {
-            await axios.post('http://localhost:4000/api/users', {
-                nombre,
-                apellido,
-                correoInstitucional,
-                password,
-                // Si el rol debe enviarse, y siempre es 'cliente' o 'estudiante' en el registro:
-                // role: 'cliente' 
-            });
+    const regexNombre = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]+$/;
 
-            // Éxito: Limpiar formulario y mostrar modal
-            setNombre('');
-            setApellido('');
-            setCorreoInstitucional('');
-            setPassword('');
-            setShowModal(true);
-            
-        } catch (err) {
-            // Manejo de errores de la API
-            console.error('Error al registrar usuario:', err);
-            const message = err.response?.data?.message || 'Fallo al crear usuario. Verifica que el correo no esté ya registrado.';
-            setError(message);
-            
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    if (!nombre || !regexNombre.test(nombre)) {
+      setError("El nombre solo puede contener letras y tildes.");
+      setIsLoading(false);
+      return;
+    }
+    if (!apellido || !regexNombre.test(apellido)) {
+      setError("El apellido solo puede contener letras y tildes.");
+      setIsLoading(false);
+      return;
+    }
+    const urpRegex = /^[^@\s]+@urp\.edu\.pe$/i;
+    if (!correoInstitucional || !urpRegex.test(correoInstitucional)) {
+      setError("El correo institucional debe ser del dominio @urp.edu.pe.");
+      setIsLoading(false);
+      return;
+    }
+    if (!usuario) {
+      setError("El nombre de usuario es requerido.");
+      setIsLoading(false);
+      return;
+    }
+    if (!password) {
+      setError("La contraseña es requerida.");
+      setIsLoading(false);
+      return;
+    }
 
-    // --- RENDERIZADO ---
-    return (
-        <div className="container">
-            <div className="row justify-content-center">
-                {/* INICIO CARD DE REGISTRO */}
-                <div className="col-md-6">
-                    <div className="card card-body">
-                        <h3>Registrar Usuarios</h3>
-                        <div className="alert alert-info" role="alert">
-                            Recuerda que para poder continuar con el registro, es necesario realizar el pago por derecho. Para más información revise <a href="https://www.urp.edu.pe/pdf/id/27737/n/tramite-del-titulo-profesional.pdf" target="_blank" rel="noopener noreferrer">este enlace</a>.
-                        </div>
-                        <form onSubmit={onSubmit}>
-                            {/* Nombre */}
-                            <div className="form-group mb-2">
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Nombre"
-                                    name="nombre"
-                                    value={nombre}
-                                    onChange={onChangeInput}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {/* Apellido */}
-                            <div className="form-group mb-2">
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Apellido"
-                                    name="apellido"
-                                    value={apellido}
-                                    onChange={onChangeInput}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {/* Correo Institucional */}
-                            <div className="form-group mb-2">
-                                <input
-                                    type="email"
-                                    className="form-control"
-                                    placeholder="Correo institucional (@urp.edu.pe)"
-                                    name="correoInstitucional"
-                                    value={correoInstitucional}
-                                    onChange={onChangeInput}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            {/* Contraseña */}
-                            <div className="form-group mb-2">
-                                <input
-                                    type="password"
-                                    className="form-control"
-                                    placeholder="Contraseña"
-                                    name="password"
-                                    value={password}
-                                    onChange={onChangeInput}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-                            <button type="submit" className="btn btn-success w-100" style={{backgroundColor:'#218838',borderColor:'#218838'}} disabled={isLoading}>
-                                {isLoading ? 'Guardando...' : 'Registrar usuario'}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-outline-success w-100 mt-2"
-                                style={{borderColor:'#218838',color:'#218838'}} 
-                                onClick={async () => {
-                                    try {
-                                        const res = await axios.get('http://localhost:4000/api/drive/auth-url');
-                                        window.location.href = res.data.url;
-                                    } catch (err) {
-                                        alert('Error al obtener URL de Google');
-                                    }
-                                }}
-                            >
-                                Crear cuenta con Google
-                            </button>
-                            {error && <div className="alert alert-danger mt-3">{error}</div>}
-                        </form>
-                        <button className="btn btn-outline-secondary mt-3 w-100" onClick={() => navigate('/')}>Volver a Login</button>
-                    </div> {/* Cierre: card card-body */}
-                </div> {/* Cierre: col-md-6 */}
-                {/* FIN CARD DE REGISTRO */}
-                
-            </div> {/* Cierre: row justify-content-center */}
+    try {
+      await axios.post('http://localhost:4000/api/pending-users', {
+        nombre,
+        apellido,
+        correoInstitucional,
+        usuario, 
+        password,
+      });
 
-            {/* Modal React nativo */}
-            {showModal && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '100vh',
-                    backgroundColor: 'rgba(0,0,0,0.5)',
-                    zIndex: 1050,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}>
-                    <div ref={modalRef} style={{
-                        background: '#fff',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-                        maxWidth: 400,
-                        width: '90vw',
-                        padding: '0',
-                        position: 'relative',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            borderBottom: '1px solid #dee2e6',
-                            padding: '1rem 1.5rem 1rem 1.5rem',
-                            borderTopLeftRadius: '8px',
-                            borderTopRightRadius: '8px',
-                        }}>
-                            <h5 style={{margin: 0, fontWeight: 600}}>Usuario guardado correctamente</h5>
-                            <button type="button" aria-label="Close" onClick={() => setShowModal(false)} style={{background: 'none', border: 'none', fontSize: '1.5rem', lineHeight: 1, color: '#333', cursor: 'pointer'}}>
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div style={{padding: '1.5rem', fontSize: '1rem'}}>
-                            Espere la confirmación de Secretaría.
-                        </div>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'flex-end',
-                            borderTop: '1px solid #dee2e6',
-                            padding: '0.75rem 1.5rem',
-                            borderBottomLeftRadius: '8px',
-                            borderBottomRightRadius: '8px',
-                        }}>
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                                Cerrar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div> /* Cierre: div.container */
-    );
+      setNombre('');
+      setApellido('');
+      setCorreoInstitucional('');
+      setUsuario('');
+      setPassword('');
+      setShowModal(true);
+    } catch (err) {
+      console.error('Error al registrar usuario:', err);
+      const message =
+        err.response?.data?.message ||
+        'Fallo al crear usuario. Verifica que el correo o usuario no estén ya registrados.';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  //ESTILOS COPIADOS DEL LOGIN 
+  const style = `
+    :root {
+      --primary-color: #28a745;
+      --secondary-color: #6c757d;
+      --light-gray: #f8f9fa;
+      --medium-gray: #e9ecef;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(to bottom, var(--light-gray), var(--medium-gray));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #212529;
+      padding: 1rem;
+    }
+    .login-card {
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      padding: 2.5rem;
+      background: #ffffff;
+      width: 100%;
+      max-width: 800px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .login-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.08);
+    }
+    .login-title {
+      color: var(--secondary-color);
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-weight: 600;
+    }
+    .form-control {
+      border-radius: 25px;
+      padding: 0.75rem 1.25rem;
+      border: 1px solid #ced4da;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .form-control:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+    }
+    .btn-login {
+      background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 0.75rem;
+      font-weight: 500;
+      width: 100%;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+    }
+    .btn-login:hover {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      transform: translateY(-2px);
+    }
+    .btn-register {
+      background: transparent;
+      color: var(--primary-color);
+      border: 2px solid var(--primary-color);
+      border-radius: 25px;
+      padding: 0.75rem;
+      font-weight: 500;
+      width: 100%;
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+    }
+    .btn-register:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+    }
+  `;
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: style }} />
+      <main className="login-card" role="main">
+        <h1 className="login-title">Registrar Usuario</h1>
+
+        <div className="alert alert-info text-center" role="alert">
+          Recuerda que para poder continuar con el registro, es necesario realizar el pago por derecho. Para más información revisa{" "}
+          <a
+            href="https://www.urp.edu.pe/pdf/id/27737/n/tramite-del-titulo-profesional.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            este enlace
+          </a>.
+        </div>
+
+        <form onSubmit={onSubmit}>
+          <div className="form-group mb-2">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nombre"
+              name="nombre"
+              value={nombre}
+              onChange={onChangeInput}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group mb-2">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Apellido"
+              name="apellido"
+              value={apellido}
+              onChange={onChangeInput}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group mb-2">
+            <input
+              type="email"
+              className="form-control"
+              placeholder="Correo institucional (@urp.edu.pe)"
+              name="correoInstitucional"
+              value={correoInstitucional}
+              onChange={onChangeInput}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* 👇 Nuevo campo Usuario */}
+          <div className="form-group mb-2">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nombre de usuario"
+              name="usuario"
+              value={usuario}
+              onChange={onChangeInput}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="form-group mb-2">
+            <input
+              type="password"
+              className="form-control"
+              placeholder="Contraseña"
+              name="password"
+              value={password}
+              onChange={onChangeInput}
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <button type="submit" className="btn btn-login" disabled={isLoading}>
+            {isLoading ? 'Guardando...' : 'Registrar usuario'}
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-register"
+            onClick={() => navigate('/')}
+          >
+            Volver al Login
+          </button>
+
+          {error && <div className="alert alert-danger mt-3 text-center">{error}</div>}
+        </form>
+
+        {showModal && (
+        <div
+            style={{
+            position: 'fixed',
+            inset: 0, // reemplaza top, left, width, height
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1050,
+            animation: 'fadeIn 0.3s ease-in-out',
+            }}
+        >
+            <div
+            style={{
+                background: '#fff',
+                borderRadius: '15px',
+                padding: '30px 25px',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                textAlign: 'center',
+                width: '90%',
+                maxWidth: '420px',
+                animation: 'slideUp 0.35s ease-out',
+            }}
+            >
+            <h5 style={{ marginBottom: '15px', color: '#28a745', fontWeight: '600' }}>
+                Usuario guardado correctamente
+            </h5>
+            <p style={{ color: '#333', marginBottom: '25px' }}>
+                Espere la confirmación de Secretaría.
+            </p>
+            <button
+                type="button"
+                className="btn btn-login w-100"
+                onClick={() => {
+                setShowModal(false);
+                navigate('/', { state: { userRegistered: true } });
+                }}
+            >
+                Aceptar
+            </button>
+            </div>
+
+            {/* Animaciones CSS dentro del mismo componente */}
+            <style>
+            {`
+                @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+                }
+                @keyframes slideUp {
+                from {
+                    transform: translateY(20px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+                }
+            `}
+            </style>
+        </div>
+        )}
+
+      </main>
+    </>
+  );
 }
 
 export default CreateUser;

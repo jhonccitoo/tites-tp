@@ -13,7 +13,10 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_REDIRECT_URI
 );
 
-const SCOPES = ['https://www.googleapis.com/auth/drive'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/userinfo.email',
+];
 const FORMULARIOS_FOLDER_ID = '17O5a0TyBYK_0C2GG1ljt8DpTVnEMb-KF'; // ID corregido
 
 const client = new MongoClient(process.env.ATLAS_URI);
@@ -29,18 +32,68 @@ router.get('/auth-url', (req, res) => {
   res.send({ url });
 });
 
-// === Obtener tokens desde código
+// === Obtener tokens desde código (VERSIÓN CORREGIDA)
 router.post('/auth', async (req, res) => {
   const { code } = req.body;
   try {
+    // 1. Obtener tokens
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    res.send(tokens);
+
+    // --- INICIO DE MODIFICACIÓN ---
+
+    // 2. Obtener el email del usuario desde Google
+    const oauth2 = google.oauth2({
+      auth: oauth2Client,
+      version: 'v2'
+    });
+    const userInfo = await oauth2.userinfo.get();
+    const email = userInfo.data.email;
+
+    if (!email) {
+      return res.status(400).json({ message: "No se pudo obtener el email de Google." });
+    }
+
+    // 3. Buscar el usuario en tu BD local (MongoDB)
+    let usuarioEncontrado = null;
+    try {
+      await client.connect();
+      const db = client.db(dbName); // dbName = 'TITESTP'
+      
+      // Usamos 'users' como confirmaste (implícito en la imagen)
+      const usersCollection = db.collection('users'); 
+
+      // <-- CORRECCIÓN CLAVE: Buscamos por 'correoInstitucional'
+      usuarioEncontrado = await usersCollection.findOne({ correoInstitucional: email });
+
+      console.log(`Email de Google: ${email}. Usuario encontrado en BD:`, usuarioEncontrado);
+
+    } catch (dbError) {
+      console.error("Error buscando usuario en DB:", dbError);
+      // Si hay un error de BD, respondemos con 'user: null' para estar seguros
+      // Opcional: puedes devolver un error 500 aquí si prefieres
+    }
+    // No cerramos el 'client' aquí, ya que tus otras rutas tampoco lo hacen.
+
+    // 4. Enviar la respuesta que el frontend espera
+    res.send({
+      access_token: tokens.access_token, // El token que el frontend guardará
+      email: email, // El email de Google
+      user: usuarioEncontrado // El objeto de usuario (o 'null' si no se encontró)
+    });
+
+    // --- FIN DE MODIFICACIÓN ---
+
   } catch (error) {
-    console.error('Error al intercambiar código:', error);
-    res.status(500).send({ error: 'Error intercambiando código' });
+    console.error('Error al intercambiar código:', error.message);
+    if (error.response?.data) {
+      console.error('Detalles del error (Google):', error.response.data);
+      return res.status(500).send({ error: 'Error intercambiando código', details: error.response.data });
+    }
+    res.status(500).send({ error: 'Error intercambiando código', details: error.message });
   }
 });
+
 
 // === Middleware de autenticación
 function authenticate(req, res, next) {
@@ -153,7 +206,7 @@ router.get('/formularios', authenticate, async (req, res) => {
 
     //console.log(`Se encontraron ${archivos.length} formularios.`);
     //archivos.forEach((file, i) =>
-    //  console.log(`[${i + 1}] ${file.name} (${file.mimeType}) - ID: ${file.id}`)
+    // 	console.log(`[${i + 1}] ${file.name} (${file.mimeType}) - ID: ${file.id}`)
     //);
 
     res.json(archivos);

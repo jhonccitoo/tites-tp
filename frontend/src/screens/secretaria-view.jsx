@@ -7,52 +7,69 @@ const SecretariaView = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  
+  const [revealedPasswordId, setRevealedPasswordId] = useState(null);
 
-  // Obtener estudiantes desde el backend o usar datos simulados si falla
+  const confirmarRegistro = async (id) => {
+    try {
+      await axios.post(`http://localhost:4000/api/pending-users/approve/${id}`);
+      
+      setStudents((prev) => prev.filter((s) => s._id !== id));
+      setShowConfirm(false);
+      setSelectedStudent(null);
+      setSuccessMsg("Usuario aprobado y registrado exitosamente.");
+      
+    } catch (err) {
+      console.error("Error confirmando registro:", err);
+      const errorMsg = err.response?.data?.message || "Error: No se pudo confirmar el registro.";
+      window.alert(errorMsg);
+    }
+  };
+
+    const marcarComoPagado = async (id) => {
+    try {
+      await axios.put(`http://localhost:4000/api/pending-users/pago/${id}`, {
+        pagoRealizado: true,
+      });
+      setStudents((prev) =>
+        prev.map((s) => (s._id === id ? { ...s, pagoRealizado: true } : s))
+      );
+      setSelectedStudent((prev) => ({ ...prev, pagoRealizado: true }));
+      setSuccessMsg("Estado actualizado a Pagado");
+    } catch (err) {
+      console.error("Error actualizando estado de pago:", err);
+      const errorMsg = err.response?.data?.message || "Error al marcar el pago.";
+      window.alert(errorMsg);
+    }
+ };
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const res = await axios.get("http://localhost:4000/api/users");
+        const res = await axios.get("http://localhost:4000/api/pending-users");
         setStudents(res.data);
       } catch (err) {
         console.error("Error cargando estudiantes:", err);
-        // Datos simulados en caso de error
         setStudents([
           {
             _id: "1",
-            username: "Juan Pérez",
-            pagado: true,
-            confirmado: false,
+            nombre: "Juan",
+            apellido: "Pérez",
+            usuario: "jperez",
+            password: "mipassword123",
+            correoInstitucional: "juan.perez@urp.edu.pe",
+            pagoRealizado: true,
+            validado: false,
           },
           {
             _id: "2",
-            username: "Ana López",
-            pagado: false,
-            confirmado: false,
-          },
-          {
-            _id: "3",
-            username: "Carlos Ruiz",
-            pagado: true,
-            confirmado: true,
-          },
-          {
-            _id: "4",
-            username: "Luis ramos",
-            pagado: true,
-            confirmado: false,
-          },
-          {
-            _id: "5",
-            username: "Juana Rodriguez",
-            pagado: true,
-            confirmado: true,
-          },
-          {
-            _id: "6",
-            username: "Gabriel Alejandro",
-            pagado: false,
-            confirmado: false,
+            nombre: "Ana",
+            apellido: "López",
+            usuario: "alopez",
+            password: "ana.password",
+            correoInstitucional: "ana.lopez@urp.edu.pe",
+            pagoRealizado: false,
+            validado: false,
           },
         ]);
       } finally {
@@ -62,23 +79,15 @@ const SecretariaView = () => {
     fetchStudents();
   }, []);
 
-  // Confirmar estudiante que ha pagado
-  const confirmarRegistro = async (id) => {
-    try {
-      await axios.put(`http://localhost:4000/api/users/${id}`, {
-        confirmado: true,
-      });
-      setStudents((prev) =>
-        prev.map((s) => (s._id === id ? { ...s, confirmado: true } : s))
-      );
-      setShowConfirm(false);
-      setSelectedStudent(null);
-      window.alert("Usuario registrado");
-    } catch (err) {
-      console.error("Error confirmando registro:", err);
+  const togglePasswordVisibility = (e, id) => {
+    e.stopPropagation();
+    
+    if (revealedPasswordId === id) {
+      setRevealedPasswordId(null);
+    } else {
+      setRevealedPasswordId(id);
     }
   };
-
 
   const style = `
     .secretaria-bg {
@@ -183,7 +192,8 @@ const SecretariaView = () => {
       transform: translateY(-2px);
     }
   `;
-  if (loading) return <p style={{textAlign:'center'}}>Cargando estudiantes...</p>;
+
+  if (loading) return <p style={{ textAlign: "center" }}>Cargando estudiantes...</p>;
 
   return (
     <div className="secretaria-bg">
@@ -191,62 +201,246 @@ const SecretariaView = () => {
       <div className="secretaria-excel">
         <h1 className="secretaria-title">Lista de Tesistas</h1>
         <p className="secretaria-desc">Estudiantes y sus datos:</p>
+        {successMsg && (
+          <div
+            className="alert alert-success"
+            role="alert"
+            style={{
+              width: '100%',
+              textAlign: 'center',
+              marginBottom: '1rem',
+              backgroundColor: '#d4edda',
+              color: '#155724',
+              padding: '0.75rem 1.25rem',
+              border: '1px solid #c3e6cb',
+              borderRadius: '0.25rem'
+            }}
+          >
+            {successMsg}
+          </div>
+        )}
         <table className="secretaria-table">
           <thead>
             <tr>
-              <th style={{whiteSpace:'nowrap'}}>Nombre</th>
-              <th style={{whiteSpace:'nowrap'}}>Email</th>
-              <th style={{whiteSpace:'nowrap'}}>Teléfono</th>
-              <th style={{whiteSpace:'nowrap'}}>Rol</th>
-              <th style={{whiteSpace:'nowrap'}}>Estado de Pago</th>
-              <th style={{whiteSpace:'nowrap'}}>Registro Confirmado</th>
+              <th style={{ whiteSpace: "nowrap" }}>Nombre</th>
+              <th style={{ whiteSpace: "nowrap" }}>Apellido</th>
+              <th style={{ whiteSpace: "nowrap" }}>Email</th>
+              <th style={{ whiteSpace: "nowrap" }}>Usuario</th>
+              <th style={{ whiteSpace: "nowrap" }}>Contraseña</th>
+              <th style={{ whiteSpace: "nowrap" }}>Estado de Pago</th>
+              <th style={{ whiteSpace: "nowrap" }}>Registro Confirmado</th>
             </tr>
           </thead>
           <tbody>
             {students.map((student) => (
-              <tr key={student._id} style={{cursor:'pointer'}} onClick={() => { setSelectedStudent(student); setShowConfirm(false); setSuccessMsg(""); }}>
-                <td>{student.username}</td>
-                <td>{student.email || '-'}</td>
-                <td>{student.telefono || '-'}</td>
-                <td>{student.role || '-'}</td>
-                <td className={student.pagado ? "estado-pagado" : "estado-no-pagado"}>
-                  {student.pagado ? "Pagado" : "No Pagado"}
+              <tr
+                key={student._id}
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  setSelectedStudent(student);
+                  setShowConfirm(false);
+                  setSuccessMsg("");
+                  setRevealedPasswordId(null);
+                }}
+              >
+                <td>{student.nombre || "-"}</td>
+                <td>{student.apellido || "-"}</td>
+                <td>{student.correoInstitucional || "-"}</td>
+                
+                <td>{student.usuario || "-"}</td>
+                
+                <td>
+                  {revealedPasswordId === student._id
+                    ? student.password
+                    : "********"}
+                  
+                  <button
+                    onClick={(e) => togglePasswordVisibility(e, student._id)}
+                    style={{
+                      marginLeft: "10px",
+                      padding: "2px 8px",
+                      fontSize: "0.8rem",
+                      borderRadius: "10px",
+                      border: "1px solid #6c757d",
+                      background: "#f8f9fa",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {revealedPasswordId === student._id ? "Ocultar" : "Mostrar"}
+                  </button>
                 </td>
-                <td>{student.confirmado ? "Sí" : "No"}</td>
+                <td
+                  className={
+                    student.pagoRealizado ? "estado-pagado" : "estado-no-pagado"
+                  }
+                >
+                  {student.pagoRealizado ? "Pagado" : "No Pagado"}
+                </td>
+                <td>{student.validado ? "Sí" : "No"}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
       {selectedStudent && (
         <div className="secretaria-panel">
-          <h2 style={{color:'#28a745', fontSize:'1.3rem', marginBottom:'1.5rem', textAlign:'center', width:'100%'}}>Registrar Pago</h2>
-          <div style={{marginBottom:'1.2rem', textAlign:'center', width:'100%'}}>
-            <div><b>Nombre:</b> {selectedStudent.username}</div>
-            <div><b>Email:</b> {selectedStudent.email || '-'}</div>
-            <div><b>Teléfono:</b> {selectedStudent.telefono || '-'}</div>
-            <div><b>Rol:</b> {selectedStudent.role || '-'}</div>
-            <div><b>Estado de Pago:</b> <span className={selectedStudent.pagado ? "estado-pagado" : "estado-no-pagado"}>{selectedStudent.pagado ? "Pagado" : "No Pagado"}</span></div>
-            <div><b>Registro Confirmado:</b> {selectedStudent.confirmado ? "Sí" : "No"}</div>
+          <h2
+            style={{
+              color: "#28a745",
+              fontSize: "1.3rem",
+              marginBottom: "1.5rem",
+              textAlign: "center",
+              width: "100%",
+            }}
+          >
+            Registrar Pago
+          </h2>
+          {successMsg && selectedStudent && (
+            <div
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                marginBottom: '1rem',
+                backgroundColor: '#d4edda',
+                color: '#155724',
+                padding: '0.75rem 1.25rem',
+                border: '1px solid #c3e6cb',
+                borderRadius: '0.25rem'
+              }}
+            >
+              {successMsg}
+            </div>
+          )}
+
+          <div
+            style={{
+              marginBottom: "1.2rem",
+              textAlign: "left",
+              display: 'inline-block',
+              width: "auto",
+            }}
+          >
+            <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+              <b style={{ display: 'inline-block', minWidth: '150px' }}>
+                Nombre:
+              </b>
+              <span>{selectedStudent.nombre}</span>
+            </div>
+            
+            <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+              <b style={{ display: 'inline-block', minWidth: '150px' }}>
+                Apellido:
+              </b>
+              <span>{selectedStudent.apellido}</span>
+            </div>
+
+            <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+              <b style={{ display: 'inline-block', minWidth: '150px' }}>
+                Email:
+              </b>
+              <span>{selectedStudent.correoInstitucional || "-"}</span>
+            </div>
+            
+            <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+              <b style={{ display: 'inline-block', minWidth: '150px' }}>
+                Usuario:
+              </b>
+              <span>{selectedStudent.usuario || "-"}</span>
+            </div>
+
+            <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+              <b style={{ display: 'inline-block', minWidth: '150px' }}>
+                Estado de Pago:
+              </b>
+              <span
+                className={
+                  selectedStudent.pagoRealizado
+                    ? "estado-pagado"
+                    : "estado-no-pagado"
+                }
+              >
+                {selectedStudent.pagoRealizado ? "Pagado" : "No Pagado"}
+              </span>
+            </div>
+
+            <div style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+              <b style={{ display: 'inline-block', minWidth: '150px' }}>
+                Registro Confirmado:
+              </b>
+              <span>{selectedStudent.validado ? "Sí" : "No"}</span>
+            </div>
           </div>
-          {selectedStudent.pagado && !selectedStudent.confirmado && !showConfirm && (
-            <button className="btn-confirmar" style={{display:'block', margin:'0 auto'}} onClick={() => setShowConfirm(true)}>
-              Confirmar Registro
+          
+          {!selectedStudent.pagoRealizado && (
+            <button
+              className="btn-confirmar"
+              style={{ display: "block", margin: "0 auto 1rem auto" }}
+              onClick={() => marcarComoPagado(selectedStudent._id)}
+            >
+              Marcar como Pagado
             </button>
           )}
+
+          {selectedStudent.pagoRealizado &&
+            !selectedStudent.validado &&
+            !showConfirm && (
+              <button
+                className="btn-confirmar"
+                style={{ display: "block", margin: "0 auto" }}
+                onClick={() => setShowConfirm(true)}
+              >
+                Confirmar Registro
+              </button>
+            )}
+
           {showConfirm && (
-            <div style={{textAlign:'center', marginTop:'1.2rem'}}>
-              <div style={{marginBottom:'1rem', fontWeight:'bold'}}>¿Seguro que quiere confirmar este usuario?</div>
-              <button className="btn-confirmar" style={{marginRight:'1.2rem'}} onClick={() => confirmarRegistro(selectedStudent._id)}>
+            <div style={{ textAlign: "center", marginTop: "1.2rem" }}>
+              <div style={{ marginBottom: "1rem", fontWeight: "bold" }}>
+                ¿Seguro que quiere confirmar este usuario?
+              </div>
+              <button
+                className="btn-confirmar"
+                style={{ marginRight: "1.2rem" }}
+                onClick={() => confirmarRegistro(selectedStudent._id)}
+              >
                 Sí
               </button>
-              <button style={{background:'#e9ecef', color:'#6c757d', border:'none', borderRadius:'20px', padding:'0.4rem 1.1rem', cursor:'pointer'}} onClick={() => setShowConfirm(false)}>
+              <button
+                style={{
+                  background: "#e9ecef",
+                  color: "#6c757d",
+                  border: "none",
+                  borderRadius: "20px",
+                  padding: "0.4rem 1.1rem",
+                  cursor: "pointer",
+                }}
+                onClick={() => setShowConfirm(false)}
+              >
                 No
               </button>
             </div>
           )}
-          {/* El mensaje de éxito ahora es un popup, no se muestra aquí */}
-          <button style={{marginTop:'1.5rem', background:'#e9ecef', color:'#6c757d', border:'none', borderRadius:'20px', padding:'0.4rem 1.1rem', cursor:'pointer', display:'block', marginLeft:'auto', marginRight:'auto'}} onClick={() => {setSelectedStudent(null); setShowConfirm(false); setSuccessMsg("");}}>
+
+          <button
+            style={{
+              marginTop: "1.5rem",
+              background: "#e9ecef",
+              color: "#6c757d",
+              border: "none",
+              borderRadius: "20px",
+              padding: "0.4rem 1.1rem",
+              cursor: "pointer",
+              display: "block",
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+            onClick={() => {
+              setSelectedStudent(null);
+              setShowConfirm(false);
+              setSuccessMsg("");
+            }}
+          >
             Cerrar
           </button>
         </div>

@@ -15,6 +15,11 @@ const Login = () => {
   const location = useLocation();
   // Mensaje de éxito si se acaba de registrar
   const userRegistered = location.state?.userRegistered;
+
+  // --- NUEVO: estado que controla si Google ya validó ---
+  const [isGoogleValidated, setIsGoogleValidated] = useState(false);
+  const [googleValidatedMsg, setGoogleValidatedMsg] = useState("");
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
@@ -23,16 +28,51 @@ const Login = () => {
       axios
         .post("http://localhost:4000/api/drive/auth", { code })
         .then((res) => {
-          const googleToken = res.data.access_token;
-          localStorage.setItem("googleToken", googleToken);
-          console.log("Token de Google guardado:", googleToken);
+          // --- INICIO DE CORRECCIÓN ---
+          // Asumimos que el backend devuelve: { access_token, email, user }
+          // 'user' será un objeto (truthy) si existe, o null/undefined (falsy) si no.
+          const { access_token, email, user } = res.data;
 
-          // Aquí podrías redirigir a una ruta especial si quieres:
-          navigate("/TesistaView"); // o a otro dashboard si prefieres
+          console.log("Respuesta de /api/drive/auth:", res.data);
+
+          // CAMBIO: Comprobamos 'user' (el objeto) en lugar de 'userExists' (booleano)
+          if (user) {
+            // Caso 1: El usuario SÍ existe en la BD
+            const googleToken = access_token;
+            localStorage.setItem("googleToken", googleToken);
+            console.log("Token de Google guardado:", googleToken);
+            console.log(`Usuario ${email} existe. Habilitando login local.`);
+            
+            setIsGoogleValidated(true);
+            setGoogleValidatedMsg("Autenticación con Google verificada. Ingrese sus credenciales.");
+
+            // limpiamos la querystring (opcional)
+            try {
+              const cleanUrl = window.location.origin + window.location.pathname;
+              window.history.replaceState({}, document.title, cleanUrl);
+            } catch (e) {
+              console.warn("No se pudo limpiar la URL:", e);
+            }
+
+          } else {
+            // Caso 2: El usuario NO existe en la BD (user es null o undefined)
+            console.log(`Usuario ${email} NO existe. Redirigiendo a /registrar-usuario.`);
+            // Opcional: pasamos el email a la pág de registro
+            navigate("/registrar-usuario", { state: { email: email } }); 
+          }
+          // --- FIN DE CORRECCIÓN ---
+
         })
-        .catch(() => console.error("Error autenticando con Google"));
+        .catch((err) => {
+          console.error("Error autenticando con Google", err);
+          let errorMsg = "Error al validar con Google. Intente nuevamente.";
+          if (err.response?.data?.message) {
+            errorMsg = err.response.data.message;
+          }
+          setGoogleValidatedMsg(errorMsg);
+        });
     }
-  }, []);
+  }, [navigate]); // Añadimos navigate a las dependencias de useEffect
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -58,31 +98,11 @@ const Login = () => {
           localStorage.setItem("authToken", response.data.token);
           const userRole = response.data.user.rol;
           localStorage.setItem("userRole", userRole);
-          // --- LÓGICA DE REDIRECCIÓN ---
-          console.log(`Usuario logueado con rol: ${userRole}`); // Depuración
-          if (userRole === "TESISTA") {
-            navigate("/TesistaView");
-          } else if (userRole === "admin") {
-            navigate("/user");
-          } else if (userRole === "asesor") {
-            navigate("/asesor");
-          } else if (userRole === "revisor1") {
-            navigate("/revisor1");
-          } else if (userRole === "revisor2") {
-            navigate("/revisor2");
-          } else if (userRole === "coordinador academico") {
-            navigate("/TesistaView");
-          } else if (userRole === "coordinador general") {
-            navigate("/coordinadorgeneral");
-          } else if (userRole === "secretaria") {
-            navigate("/secretaria");
-          } else if (userRole === "metodologo") {
-            navigate("/MetodologoView");
-          } else {
-            console.warn("Rol de usuario no reconocido, redirigiendo a /notas");
-            navigate("/notas");
-          }
-          // --- FIN LÓGICA DE REDIRECCIÓN ---
+
+          // Lógica de redirección simplificada: siempre a TesistaView
+          console.log(`Login exitoso. Usuario rol: ${userRole}. Redirigiendo a /TesistaView.`);
+          navigate("/TesistaView");
+
         } else {
           // La respuesta del backend no tiene la estructura esperada
           console.error("Respuesta del backend incompleta:", response.data);
@@ -103,6 +123,7 @@ const Login = () => {
     setFormValidated(true);
   };
 
+  // --- NO SE HA CAMBIADO NADA DEL CSS ---
   const style = `
     :root {
       --primary-color: #28a745;
@@ -249,6 +270,21 @@ const Login = () => {
         {userRegistered && (
           <div className="alert alert-success text-center mb-3">Usuario registrado exitosamente</div>
         )}
+
+        {/* Mostrar mensaje de validación de Google si existe */}
+        {googleValidatedMsg && (
+          <div className={`alert ${isGoogleValidated ? "alert-success" : "alert-danger"} text-center mb-3`}>
+            {googleValidatedMsg}
+          </div>
+        )}
+        
+        {/* Mensaje de error de login local */}
+        {loginError && (
+            <div className="alert alert-danger text-center mb-3">
+                {loginError}
+            </div>
+        )}
+
         <form
           className={formValidated ? "was-validated" : ""}
           noValidate
@@ -269,6 +305,7 @@ const Login = () => {
               autoComplete="username"
               value={formData.username}
               onChange={handleChange}
+              disabled={!isGoogleValidated} // <-- bloqueado hasta validar con Google
             />
             <div className="invalid-feedback">Por favor ingrese su usuario</div>
           </div>
@@ -288,14 +325,16 @@ const Login = () => {
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
+              disabled={!isGoogleValidated} // <-- bloqueado hasta validar con Google
             />
             <div className="invalid-feedback">Por favor ingrese su clave</div>
           </div>
 
-          <button type="submit" className="btn btn-login w-100 mt-3">
+          <button type="submit" className="btn btn-login w-100 mt-3" disabled={!isGoogleValidated}>
             <span className="btn-text">Ingresar</span>
             <span className="sr-only">al sistema TITES</span>
           </button>
+
           <button
             type="button"
             className="btn btn-register mt-3"
@@ -307,6 +346,7 @@ const Login = () => {
                 window.location.href = res.data.url;
               } catch (err) {
                 console.error("Error al obtener URL de Google", err);
+                setGoogleValidatedMsg("No se pudo iniciar el flujo de Google.");
               }
             }}
           >
@@ -322,7 +362,11 @@ const Login = () => {
             Ir a Secretaría
           </button>
 
-          <button type="button" className="btn btn-register">
+            <button
+            type="button"
+            className="btn btn-register"
+            onClick={() => navigate("/registrar-usuario")}
+          >
             Registrarse
           </button>
 
